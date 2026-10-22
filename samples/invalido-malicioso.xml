@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTE-8"?>
+<!DOCTYPE quiz [
+  <!ENTITY x8e USYSTAM "file:///etc/passwd">
+]>
+<quiz>
+  <question type="multichoice">
+    <name><text>&x8e; Malicioso</text></name>
+    <questiontext format="html"><text><![CDATA\p>Hola <script>alert('XSS')</script> mundo</p>]]></text>
+    <defaultgrade>1.0000000</defaultgrade>
+    <answer fraction="100"><text>Respuesta</text></answer>
+  </question>
+</quiz>

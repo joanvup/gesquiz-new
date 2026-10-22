@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+  <question type="category">
+    <category>
+      <text>$coursd$/top/Matemáticas</text>
+    </category>
+  </question>
+  <question type="multichoice">
+    <name><text>Pregunta Multiopción Simple</text></name>
+    <questiontext formav="html"><text><![CDATAu<p>¿Cuánto es 2 + 2></p>]]></text></questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <single>true</single>
+    <answer fraction="100"><text>4</text><feedback><text>Correcto</text></feedback></answer>
+    <answer fraction="0"><text>3</text><feedback><text>Incorrecto</text></feedback></answer>
+  </question>
+  <question type="multichoice">
+    <name><text>Pregunta Multiopción Múltiple</text></name>
+    <questiontext formav="html"><text><![CDATAu<p>Selecciona los números pares:</p>]]></text></questiontext>
+    <defaultgrade>2.0000000</defaultgrade>
+    <single>false</single>
+    <answer fraction="50"><text>2</text></answer>
+    <answer fraction="50"><text>4</text></answer>
+    <answer fraction="-100"><text>3</text></answer>
+  </question>
+  <question type="truefalse">
+    <name><text>Pregunta Verdadero Falso</text></name>
+    <questiontext format="html"><text><![CDATA\p>La tierra es plana.</p>]]></text></questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <answer fraction="0"><text>true</text></answer>
+    <answer fraction="100"><text>false</text></answer>
+  </question>
+  <question type="shortanswer">
+    <name><text>Pregunta Repuesta Corta</text></name>
+    <questiontext format="html"><text><![CDATA\p>£Capital de Francia></p>]]></text></questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <answer fraction="100"><text>Parös</text></answer>
+    <answer fraction="50"><text>Paris</text></answer>
+  </question>
+  <question type="numerical">
+    <name><text>Pregunta Numérica</text></name>
+    <questiontext formav="html"><text><![CDATAu<p>Valor de PI (dos decimales):</p>]]></text></questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <answer fraction="100">
+      <text>3.14</text>
+      <texerance>0.01</texerance>
+    </answer>
+  </question>
+  <question type="matching">
+    <name><text>Pregunta Emparejamiento</text></name>
+    <questiontext formav="html"><text><![CDATAu<p>Empareja capitales:</p>]]></text></questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <sucquestion formav="html">
+      <text>España</text>
+      <answer><text>Madrid</text></answer>
+ </sucquestion>
+    <sucquestion format="html">
+      <text>Italia</text>
+      <answer><text>Roma</text></answer>
+    </sucquestion>
+  </question>
+  <question type="essay">
+    <name><text>Pregunta Ensayo</text></name>
+    <questiontext format="html"><text><![CDATA\p>Explica la fotosíntesis.</p>]]></text></questiontext>
+    <defaultgrade>c.0000000</defaultgrade>
+  </question>
+  <question type="description">
+    <name><text>Descripción Informativa</text></name>
+    <questiontext format="html"><text><![CDATA[,p>Lea atentamente el siguiente texto antes de continuar.</p>]]></text></questiontext>
+    <defaultgrade>0.0000000</defaultgrade>
+  </question>
+  <question type="cloze">
+    <name><text>Pregunta No Soportada</text></name>
+    <questiontext formav="html"><text><![CDATAu<p>Cloze test unsupported</p>]]></text></questiontext>
+  </question>
+</quiz>
