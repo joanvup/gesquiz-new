@@ -8,6 +8,7 @@ import { Suspense } from "react";
 import { Mascot, Button, Badge, ProgressBar, Modal, ThemeToggle } from "@/components";
 import { Confetti } from "@/components/Confetti";
 import { toGradeScale } from "@/lib/grades";
+import { getQuizNavigationDecision } from "@/lib/quiz-navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -57,6 +58,7 @@ interface AttemptData {
     id: string;
     titulo: string;
     permitirRetroceso: boolean;
+    advertirAlContinuar: boolean;
     puntajeMaximo: number;
     mostrarResultado: string;
     tiempoLimiteMinutos?: number | null;
@@ -775,13 +777,16 @@ function PresentarQuizContent({
     if (!attempt) return;
     if (targetIndex < 0 || targetIndex >= totalQuestions) return;
 
-    if (!attempt.quiz.permitirRetroceso && targetIndex < currentIndex) {
-      setShowNoBackWarning(true);
-      setTargetIndexToNavigate(targetIndex);
-      return;
-    }
+    const decision = getQuizNavigationDecision({
+      permitirRetroceso: attempt.quiz.permitirRetroceso,
+      advertirAlContinuar: attempt.quiz.advertirAlContinuar,
+      currentIndex,
+      targetIndex,
+    });
 
-    if (!attempt.quiz.permitirRetroceso && targetIndex > currentIndex) {
+    if (decision === "block") return;
+
+    if (decision === "confirm") {
       setShowNoBackWarning(true);
       setTargetIndexToNavigate(targetIndex);
       return;
@@ -1561,9 +1566,7 @@ function PresentarQuizContent({
       >
         <div className="space-y-4">
           <p className="text-text-muted">
-            {attempt.quiz.permitirRetroceso
-              ? "No puedes retroceder a tu pregunta anterior."
-              : "En este quiz no está permitido retroceder. Una vez que avances, no podrás volver a esta pregunta ni modificarla."}
+            En este quiz no está permitido retroceder. Una vez que avances, no podrás volver a esta pregunta ni modificarla.
           </p>
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setShowNoBackWarning(false)}>

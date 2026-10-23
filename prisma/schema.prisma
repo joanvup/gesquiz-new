@@ -82,6 +82,8 @@ model Quiz {
   descripcion             String?
   instrucciones           String?
   permitirRetroceso       Boolean  @default(true)
+  // Muestra el modal de confirmación al avanzar cuando el retroceso está desactivado.
+  advertirAlContinuar     Boolean  @default(false)
   tiempoLimiteMinutos     Int?
   ordenAleatorioPreguntas Boolean  @default(false)
   ordenAleatorioOpciones  Boolean  @default(false)

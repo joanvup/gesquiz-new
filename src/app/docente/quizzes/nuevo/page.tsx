@@ -23,6 +23,7 @@ interface QuizData {
   maxInfracciones: number;
   publicado: boolean;
   permitirRetroceso: boolean;
+  advertirAlContinuar: boolean;
   ordenAleatorioPreguntas: boolean;
   ordenAleatorioOpciones: boolean;
   modoSeguro: boolean;
@@ -38,6 +39,7 @@ function QuizFormContent({ params }: QuizFormProps) {
   const [descripcion, setDescripcion] = useState('');
   const [instrucciones, setInstrucciones] = useState('');
   const [permitirRetroceso, setPermitirRetroceso] = useState(true);
+  const [advertirAlContinuar, setAdvertirAlContinuar] = useState(false);
   const [tiempoLimiteMinutos, setTiempoLimiteMinutos] = useState('');
   const [ordenAleatorioPreguntas, setOrdenAleatorioPreguntas] = useState(false);
   const [ordenAleatorioOpciones, setOrdenAleatorioOpciones] = useState(false);
@@ -65,6 +67,7 @@ function QuizFormContent({ params }: QuizFormProps) {
           setDescripcion(q.descripcion || '');
           setInstrucciones(q.instrucciones || '');
           setPermitirRetroceso(q.permitirRetroceso);
+          setAdvertirAlContinuar(q.advertirAlContinuar ?? false);
           setTiempoLimiteMinutos(q.tiempoLimiteMinutos ? q.tiempoLimiteMinutos.toString() : '');
           setOrdenAleatorioPreguntas(q.ordenAleatorioPreguntas);
           setOrdenAleatorioOpciones(q.ordenAleatorioOpciones);
@@ -96,6 +99,7 @@ function QuizFormContent({ params }: QuizFormProps) {
       descripcion: descripcion || null,
       instrucciones: instrucciones || null,
       permitirRetroceso,
+      advertirAlContinuar,
       tiempoLimiteMinutos: tiempoLimiteMinutos ? parseInt(tiempoLimiteMinutos) : null,
       ordenAleatorioPreguntas,
       ordenAleatorioOpciones,
@@ -304,6 +308,28 @@ function QuizFormContent({ params }: QuizFormProps) {
               className='rounded border-border text-primary-text focus:ring-primary'
             />
             Permitir retroceso entre preguntas
+          </label>
+
+          <label
+            className={`flex items-start gap-3 text-sm text-text bg-surface-alt p-3 rounded-xl transition ${
+              permitirRetroceso
+                ? 'opacity-60 cursor-not-allowed'
+                : 'hover:bg-primary/5 cursor-pointer'
+            }`}
+          >
+            <input
+              type='checkbox'
+              checked={advertirAlContinuar}
+              onChange={(e) => setAdvertirAlContinuar(e.target.checked)}
+              disabled={permitirRetroceso}
+              className='mt-0.5 rounded border-border text-primary-text focus:ring-primary disabled:cursor-not-allowed'
+            />
+            <span>
+              Mostrar advertencia al continuar
+              <span className='block text-xs text-text-muted'>
+                Solo aplica cuando el retroceso está desactivado.
+              </span>
+            </span>
           </label>
 
           <label className='flex items-center gap-3 text-sm text-text bg-surface-alt p-3 rounded-xl hover:bg-primary/5 transition cursor-pointer'>
