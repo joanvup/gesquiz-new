@@ -5,6 +5,7 @@ Sistema integral de gestión y aplicación de quizzes escolares con importación de
 ## Requisitos
 - Node.js 20+ / 24+
 - npm
+- MySQL 8 en ejecución
 
 ## Instalación y Configuración
 

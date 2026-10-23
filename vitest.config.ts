@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    setupFiles: ['./vitest.setup.ts'],
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'e2e/**'],
   },
 })

@@ -1,10 +1,10 @@
-﻿import { expect, test } from 'vitest'
+﻿import 'dotenv/config'
+import { expect, test } from 'vitest'
 import { PrismaClient } from '../../src/generated/prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { createPrismaMariaDbAdapter } from '../lib/prisma-adapter'
 
 test('seed data exists in database', async () => {
-  const adapter = new PrismaBetterSqlite3({ url: 'file:./dev.db' })
-  const prisma = new PrismaClient({ adapter })
+  const prisma = new PrismaClient({ adapter: createPrismaMariaDbAdapter() })
 
   const docente = await prisma.user.findUnique({
     where: { email: 'docente@quizcolegio.test' },

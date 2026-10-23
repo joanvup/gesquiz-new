@@ -2,19 +2,16 @@
 // NO en este bloque (los campos url/directUrl/shadowDatabaseUrl del datasource
 // estan deprecados en Prisma 7).
 //
-// Para migrar a PostgreSQL en el futuro:
-//   1. Cambia `provider = "sqlite"` por `provider = "postgresql"`.
-//   2. Cambia DATABASE_URL en .env a
-//      "postgresql://user:password@host:5432/quizcolegio" (prisma7.config.ts la lee de env).
-//   3. Ejecuta `npx prisma migrate dev --name init-postgres` (generara una linea de
-//      migracion nueva; las de SQLite no se reutilizan).
-//   4. Prisma 7 exige driver adapter en el cliente: sustituye
-//      @prisma/adapter-better-sqlite3 por @prisma/adapter-pg en src/lib/db.ts.
+// Base de datos actual: MySQL 8 (Laragon en desarrollo).
+//   1. `provider = "mysql"`.
+//   2. DATABASE_URL en .env con formato
+//      "mysql://user:password@host:3306/quizcolegio".
+//   3. Prisma 7 exige driver adapter en el cliente:
+//      @prisma/adapter-mariadb en src/lib/db.ts.
 //
-// Nota: SQLite no soporta bloques `enum` en Prisma, por lo que los campos de tipo
-// enumerado (role, status, tipo, mostrarResultado, formato) son `String` con los
-// valores permitidos documentados en comentarios y validados con Zod en la capa de
-// aplicacion. Si se migra a PostgreSQL se pueden convertir a `enum`.
+// Nota: los campos de tipo enumerado (role, status, tipo, mostrarResultado,
+// formato) se mantienen como `String` para conservar la validacion con Zod en la
+// capa de aplicacion. En MySQL podrian convertirse a `enum` si se desea.
 
 generator client {
   provider = "prisma-client"
@@ -22,7 +19,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
 }
 
 model User {
@@ -79,8 +76,8 @@ model Quiz {
   id                      String   @id @default(cuid())
   teacherId               String
   titulo                  String
-  descripcion             String?
-  instrucciones           String?
+  descripcion             String?  @db.Text
+  instrucciones           String?  @db.Text
   permitirRetroceso       Boolean  @default(true)
   // Muestra el modal de confirmación al avanzar cuando el retroceso está desactivado.
   advertirAlContinuar     Boolean  @default(false)
@@ -116,7 +113,7 @@ model QuizAssignment {
   group   Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
   student User?  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  // En SQLite uniques sobre campos nullable permiten multiples NULL
+  // En MySQL los uniques sobre campos nullable permiten multiples NULL
   @@unique([quizId, groupId])
   @@unique([quizId, studentId])
 }
@@ -127,16 +124,16 @@ model Question {
   // "MULTICHOICE" | "TRUEFALSE" | "SHORTANSWER" | "NUMERICAL" | "MATCHING"
   // | "ESSAY" | "DESCRIPTION" | "UNSUPPORTED"
   tipo                String
-  enunciadoHtml       String // ya sanitizado en la importacion (fase 2)
+  enunciadoHtml       String  @db.Text // ya sanitizado en la importacion (fase 2)
   // "html" | "plain_text" | "markdown" | "moodle_auto_format"
   formato             String  @default("html")
   defaultGrade        Float   @default(1)
   penalty             Float   @default(0)
-  generalFeedbackHtml String?
-  category            String? // etiqueta Moodle, ej. "$course$/top/Matematicas"
+  generalFeedbackHtml String? @db.Text
+  category            String? @db.Text // etiqueta Moodle, ej. "$course$/top/Matematicas"
   orden               Int
   noPuntua            Boolean @default(false) // DESCRIPTION (informativa) y UNSUPPORTED no puntuan
-  datosJson           String? // opciones/pares/tolerancia/comodines (fases 2 y 4)
+  datosJson           String? @db.Text // opciones/pares/tolerancia/comodines (fases 2 y 4)
 
   quiz     Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
   options  AnswerOption[]
@@ -147,11 +144,11 @@ model AnswerOption {
   id           String  @id @default(cuid())
   questionId   String
   orden        Int
-  textoHtml    String
+  textoHtml    String  @db.Text
   esCorrecta   Boolean @default(false)
   fraction     Float   @default(0) // puntuacion parcial en multichoice multiple
-  feedbackHtml String?
-  extraJson    String? // clave/valor para shortanswer, numerical+tolerancia, pares matching
+  feedbackHtml String? @db.Text
+  extraJson    String? @db.Text // clave/valor para shortanswer, numerical+tolerancia, pares matching
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
@@ -173,8 +170,8 @@ model Attempt {
   currentQuestionIndex Int      @default(0)
   infractions          Int      @default(0)
   sessionTokenHash     String   @unique // token rotativo del intento (una sesion activa por intento)
-  questionOrderJson    String?
-  optionOrderJson      String?
+  questionOrderJson    String?  @db.Text
+  optionOrderJson      String?  @db.Text
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -190,8 +187,8 @@ model AttemptAnswer {
   id                    String   @id @default(cuid())
   attemptId             String
   questionId            String
-  respuestaJson         String? // respuesta del estudiante en JSON segun tipo
-  respuestaTexto        String?
+  respuestaJson         String?  @db.Text // respuesta del estudiante en JSON segun tipo
+  respuestaTexto        String?  @db.Text
   puntuacion            Float?
   esCorrecta            Boolean?
   calificadaManualmente Boolean   @default(false)
@@ -213,9 +210,9 @@ model AuditEvent {
   // | "AUTO_ENVIO_POR_INFRACCIONES" | "EXPIRACION_TIEMPO" | "REAPERTURA"
   // | "ANULACION" | ...
   tipo      String
-  detalle   String?
+  detalle   String?  @db.Text
   ip        String?
-  userAgent String?
+  userAgent String?  @db.Text
   createdAt DateTime @default(now())
 
   attempt Attempt? @relation(fields: [attemptId], references: [id], onDelete: SetNull)
@@ -226,9 +223,9 @@ model ImportBatch {
   id         String   @id @default(cuid())
   teacherId  String
   quizId     String?
-  fileName   String
+  fileName   String   @db.VarChar(255)
   createdAt  DateTime @default(now())
-  reportJson String // reporte de importacion (fase 2)
+  reportJson String   @db.LongText // reporte de importacion (fase 2)
 
   teacher User  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   quiz    Quiz? @relation(fields: [quizId], references: [id], onDelete: SetNull)
