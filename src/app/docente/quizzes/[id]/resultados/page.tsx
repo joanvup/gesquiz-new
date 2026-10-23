@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { Mascot, Button, StatusBadge, EmptyState, ThemeToggle } from '@/components';
-import { ChevronRight, Download, Trophy, AlertCircle, Eye } from 'lucide-react';
+import { ChevronRight, Download, Trophy, AlertCircle, Eye, Loader2 } from 'lucide-react';
 import { toGradeScale } from '@/lib/grades';
 
 interface AttemptItem {
@@ -34,6 +34,48 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+
+  async function handleExport() {
+    setExporting(true);
+    setExportError('');
+
+    try {
+      const res = await fetch(
+        `/api/docente/quizzes/${id}/resultados?format=xlsx`
+      );
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(data?.error || 'No se pudieron exportar los resultados');
+      }
+
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      const filename = match?.[1] || `resultados-quiz-${id}.xlsx`;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      setExportError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudieron exportar los resultados'
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -88,17 +130,29 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
         </div>
         <div className='flex items-center gap-2'>
           <ThemeToggle />
-          <Link href='#'>
-            <Button
-              variant="success"
-              size="md"
-              leftIcon={<Download className="w-4 h-4" />}
-            >
-              Exportar a CSV
-            </Button>
-          </Link>
+          <Button
+            variant="success"
+            size="md"
+            leftIcon={
+              exporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )
+            }
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            {exporting ? 'Exportando...' : 'Exportar a Excel'}
+          </Button>
         </div>
       </div>
+
+      {exportError && (
+        <div className='mb-4 p-3 bg-danger-soft text-danger-text rounded-xl text-sm flex items-center gap-2'>
+          <AlertCircle className='w-4 h-4 flex-shrink-0' /> {exportError}
+        </div>
+      )}
 
       <div className='bg-card rounded-3xl shadow-lg border border-border p-6 md:p-8 mb-8'>
         <h1 className='text-2xl font-heading font-bold text-text mb-2'>{quiz.titulo}</h1>
