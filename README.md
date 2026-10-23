@@ -1,62 +1,144 @@
 # QuizColegio
 
-Sistema integral de gesti髇 y aplicaci髇 de quizzes escolares con importaci髇 de preguntas desde Moodle XML, modo seguro de examen, control de infracciones y supervisi髇 docente en tiempo real.
+Sistema integral de gesti贸n y aplicaci贸n de quizzes escolares con importaci贸n de preguntas desde Moodle XML, modo seguro de examen, control de infracciones y supervisi贸n docente en tiempo real.
 
 ## Requisitos
+
 - Node.js 20+ / 24+
 - npm
-- MySQL 8 en ejecuci髇
+- MySQL 8.x en ejecuci贸n (local o remoto)
 
-## Instalaci髇 y Configuraci髇
+## Instalaci贸n y configuraci贸n
 
 1. Clonar el repositorio.
 2. Instalar dependencias:
-   `ash
+
+   ```bash
    npm install
-   `
-3. Configurar variables de entorno (copiar .env.example a .env):
-   `ash
+   ```
+
+3. Crear la base de datos y el usuario de MySQL. Ejemplo:
+
+   ```sql
+   CREATE DATABASE gesquiz
+     CHARACTER SET utf8mb4
+     COLLATE utf8mb4_unicode_ci;
+
+   CREATE USER 'gesquiz'@'%' IDENTIFIED BY 'tu_password';
+   GRANT ALL PRIVILEGES ON gesquiz.* TO 'gesquiz'@'%';
+
+   -- Solo para desarrollo local: permite que Prisma Migrate cree la shadow database.
+   GRANT CREATE, DROP ON *.* TO 'gesquiz'@'%';
+   FLUSH PRIVILEGES;
+   ```
+
+4. Crear el archivo `.env` en la ra铆z del proyecto. Si tienes la plantilla `.env.example`, puedes copiarla:
+
+   ```bash
    cp .env.example .env
-   `
-4. Ejecutar migraciones y semilla de datos de prueba:
-   `ash
-   npx prisma migrate dev --name init
+   ```
+
+   En PowerShell:
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+   Si la plantilla no est谩 disponible, crea `.env` manualmente con las variables del paso siguiente.
+
+5. Configurar la conexi贸n a MySQL en `.env`:
+
+   ```env
+   DATABASE_URL="mysql://gesquiz:tu_password@localhost:3306/gesquiz"
+   SESSION_SECRET="cambia-esta-clave-en-produccion"
+   MAX_IMPORT_MB=10
+   ```
+
+6. Aplicar las migraciones:
+
+   ```bash
+   npm run db:migrate
+   ```
+
+   Para un entorno de producci贸n se puede usar:
+
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+7. Cargar los datos de prueba:
+
+   ```bash
    npm run db:seed
-   `
+   ```
 
-## Comandos Disponibles
-- 
-pm run dev: Inicia el servidor de desarrollo Next.js.
-- 
-pm run build: Genera el build de producci髇.
-- 
-pm run start: Inicia el servidor de producci髇.
-- 
-pm run lint: Ejecuta el linter (ESLint).
-- 
-pm run test: Ejecuta las pruebas unitarias con Vitest.
-- 
-pm run test:e2e: Ejecuta las pruebas End-to-End con Playwright.
-- 
-pm run db:migrate: Ejecuta migraciones de base de datos Prisma.
-- 
-pm run db:seed: Carga datos iniciales (docente, estudiantes, grupos, quizzes de ejemplo).
-- 
-pm run db:studio: Abre Prisma Studio para inspeccionar la base de datos.
+8. Iniciar el servidor de desarrollo:
 
-## Credenciales de Prueba (Seed)
-- **Docente**: docente@quizcolegio.test / Docente123!
+   ```bash
+   npm run dev
+   ```
+
+La aplicaci贸n queda disponible en `http://localhost:3000`.
+
+## Base de datos
+
+- Motor: **MySQL 8**.
+- Driver adapter de Prisma: `@prisma/adapter-mariadb`.
+- Migraci贸n inicial: `prisma/migrations/20261023033959_init_mysql`.
+- El proyecto ya no utiliza SQLite.
+
+Si se modifica `prisma/schema.prisma`, crear una nueva migraci贸n con:
+
+```bash
+npx prisma migrate dev --name nombre_del_cambio
+```
+
+## Comandos disponibles
+
+| Comando | Descripci贸n |
+| --- | --- |
+| `npm run dev` | Inicia el servidor de desarrollo Next.js. |
+| `npm run build` | Genera el build de producci贸n. |
+| `npm run start` | Inicia el servidor de producci贸n. |
+| `npm run lint` | Ejecuta el linter con ESLint. |
+| `npm test` | Ejecuta las pruebas unitarias con Vitest. |
+| `npm run test:e2e` | Ejecuta las pruebas End-to-End con Playwright. |
+| `npm run db:migrate` | Aplica las migraciones de Prisma. |
+| `npm run db:seed` | Carga los datos iniciales de desarrollo. |
+| `npm run db:admin` | Crea o actualiza el administrador definido en `.env`. |
+| `npm run db:studio` | Abre Prisma Studio para inspeccionar la base de datos. |
+
+## Credenciales de prueba (seed)
+
+- **Administrador**: `admin@quizcolegio.test` / `Admin123!`
+- **Docente**: `docente@quizcolegio.test` / `Docente123!`
 - **Estudiantes (Grupo A)**:
-  - estudiante1@quizcolegio.test / Estudiante123!
-  - estudiante2@quizcolegio.test / Estudiante123!
-  - estudiante3@quizcolegio.test / Estudiante123!
+  - `estudiante1@quizcolegio.test` / `Estudiante123!`
+  - `estudiante2@quizcolegio.test` / `Estudiante123!`
+  - `estudiante3@quizcolegio.test` / `Estudiante123!`
 
-## C髆o Importar Archivos Moodle XML
-1. Inicie sesi髇 con una cuenta de rol **Docente**.
-2. En el panel docente, seleccione un quiz existente o cree uno nuevo.
-3. Acceda a la secci髇 de **Importar XML**, cargue un archivo compatible con Moodle XML (puede utilizar los ejemplos en samples/) y pulse Importar.
+## Importar archivos Moodle XML
 
-## Nota de Honestidad T閏nica sobre el Modo Seguro en Navegadores Web
-El "modo seguro" basado en eventos del navegador (isibilitychange, lur, detecci髇 de salida de pantalla completa) es una medida disuasoria 鷗il para entornos cotidianos, pero **no es infalible**. Un alumno con conocimientos t閏nicos avanzados puede eludirlo mediante herramientas de desarrollador, m鷏tiples pantallas o scripts externos. 
+1. Iniciar sesi贸n con una cuenta de rol **Docente**.
+2. En el panel docente, seleccionar un quiz existente o crear uno nuevo.
+3. Acceder a **Importar XML**, cargar un archivo compatible con Moodle XML (puede utilizarse un ejemplo de `samples/`) y pulsar **Importar**.
 
-Para ex醡enes formales o de alta exigencia acad閙ica, se recomienda encarecidamente el uso de navegadores especializados como **Safe Exam Browser (SEB)** o la supervisi髇 presencial en aula.
+## Pruebas
+
+Las pruebas unitarias y de integraci贸n utilizan la base de datos configurada en `.env`, por lo que MySQL debe estar en ejecuci贸n y el seed debe haberse aplicado:
+
+```bash
+npm test
+```
+
+Las pruebas End-to-End inician autom谩ticamente el servidor de desarrollo:
+
+```bash
+npm run test:e2e
+```
+
+## Nota de honestidad t茅cnica sobre el modo seguro en navegadores web
+
+El "modo seguro" basado en eventos del navegador (`visibilitychange`, `blur`, detecci贸n de salida de pantalla completa) es una medida disuasoria 煤til para entornos cotidianos, pero **no es infalible**. Un alumno con conocimientos t茅cnicos avanzados puede eludirlo mediante herramientas de desarrollador, m煤ltiples pantallas o scripts externos.
+
+Para ex谩menes formales o de alta exigencia acad茅mica, se recomienda encarecidamente el uso de navegadores especializados como **Safe Exam Browser (SEB)** o la supervisi贸n presencial en aula.
