@@ -101,6 +101,24 @@ model Quiz {
   assignments   QuizAssignment[]
   attempts      Attempt[]
   importBatches ImportBatch[]
+  images        QuizImage[]
+}
+
+// Imagenes subidas por el docente para los enunciados/opciones del quiz.
+// El archivo vive en disco (storage/uploads/...), fuera de /public, y se
+// sirve mediante /api/uploads/[...path]. Ver docs/preguntas-manuales.md.
+model QuizImage {
+  id         String   @id @default(cuid())
+  quizId     String
+  fileName   String   @db.VarChar(255) // nombre original, solo informativo
+  storedPath String   @unique @db.VarChar(500) // ruta relativa dentro de UPLOAD_DIR
+  mimeType   String   @db.VarChar(100)
+  size       Int
+  createdAt  DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
 }
 
 model QuizAssignment {

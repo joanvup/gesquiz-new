@@ -123,6 +123,43 @@ npx prisma migrate dev --name nombre_del_cambio
 2. En el panel docente, seleccionar un quiz existente o crear uno nuevo.
 3. Acceder a **Importar XML**, cargar un archivo compatible con Moodle XML (puede utilizarse un ejemplo de `samples/`) y pulsar **Importar**.
 
+> ⚠️ **Importante:** Importar un XML de Moodle **reemplaza todas las preguntas** del quiz (incluidas las creadas manualmente desde la pestaña «Preguntas»). Si el quiz ya tiene intentos, las respuestas asociadas a las preguntas eliminadas también se pierden.
+
+## Preguntas manuales (editor visual)
+
+Desde la pestaña **Preguntas** del editor del quiz (`/docente/quizzes/[id]/editar`), el docente puede crear y gestionar preguntas sin depender de Moodle XML:
+
+- **Tipos soportados**: Opción múltiple (respuesta única / varias respuestas), Falso/Verdadero, Completar (respuesta corta) y Pregunta abierta (ensayo).
+- **Editor enriquecido (Tiptap)**: enunciado, opciones y retroalimentación general admiten negrita, cursiva, listas, encabezados, enlaces, tablas e **imágenes**.
+- **Inserción de imágenes**: subida directa al servidor (almacenamiento local en `storage/uploads/`, servido por `/api/uploads/...`) o URL externa (`https://…`).
+- **Reordenación**: arrastrar y soltar (dnd-kit) para cambiar el orden de las preguntas.
+- **Exportar / Importar quiz completo (JSON)**: botón «Exportar» descarga un archivo `.quiz.json` con configuración, preguntas e imágenes (base64). Botón «Importar» permite fusionar (merge) en un quiz existente o crear uno nuevo (desde el panel docente).
+- **Importación de quiz completo**: en el panel docente aparece un botón «Importar JSON» que crea un quiz nuevo a partir del archivo exportado (siempre queda como borrador, `publicado: false`).
+
+### Almacenamiento de imágenes
+
+- Los archivos se guardan **fuera de `public/`** en `storage/uploads/quizzes/{quizId}/{uuid}.{ext}` (configurable con `UPLOAD_DIR`).
+- Se sirven mediante la ruta `/api/uploads/[...path]`, de modo que funcionan tanto en desarrollo como en producción (`next build` + `next start`).
+- Límite por defecto: **5 MB** por imagen (`MAX_IMAGE_MB` en `.env`).
+- Validación MIME + *magic bytes* (anti-spoofing).
+
+### Variables de entorno para preguntas manuales
+
+Añade a tu `.env` si deseas cambiar los valores por defecto:
+
+```env
+UPLOAD_DIR=/ruta/absoluta/almacenamiento/uploads   # por defecto: ./storage/uploads
+MAX_IMAGE_MB=5                                     # máximo MB por imagen
+MAX_IMPORT_MB=40                                   # máximo MB para importación JSON completa
+```
+
+### Notas de despliegue en producción
+
+- El directorio `storage/` debe ser un **volumen persistente** con permisos de escritura para el usuario que ejecuta la app.
+- Incluye `storage/` en tus backups (ver `docs/instalacion_produccion.md`).
+- El CSP en `next.config.ts` permite `img-src 'self' data: blob: https:` para que funcionen las imágenes externas.
+- **No** uses `public/uploads` para archivos subidos en tiempo de ejecución: Next.js no los sirve tras `next build`.
+
 ## Pruebas
 
 Las pruebas unitarias y de integración utilizan la base de datos configurada en `.env`, por lo que MySQL debe estar en ejecución y el seed debe haberse aplicado:

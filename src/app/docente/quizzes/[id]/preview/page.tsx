@@ -148,7 +148,7 @@ function PreviewQuizPageContent({ params }: { params: Promise<{ id: string }> })
 
           {/* Enunciado */}
           <div
-            className='prose prose-lg max-w-none text-text mt-6'
+            className='rich-content max-w-none text-text mt-6'
             dangerouslySetInnerHTML={{ __html: currentQ.enunciadoHtml }}
           />
 
@@ -168,10 +168,10 @@ function PreviewQuizPageContent({ params }: { params: Promise<{ id: string }> })
                   name='preview-option'
                   className='mt-1 text-primary-text focus:ring-primary'
                 />
-                <span
-                  className='text-sm text-text flex-1'
+                <div
+                  className='rich-content text-sm text-text flex-1'
                   dangerouslySetInnerHTML={{ __html: opt.textoHtml }}
-                />
+                ></div>
                 {opt.esCorrecta && (
                   <span className='ml-auto text-xs bg-success-soft text-success-text px-2 py-1 rounded-full font-semibold'>
                     ✓ Correcta

@@ -97,7 +97,7 @@ function AnswerContent({
         {display.pairs.map((pair) => (
           <li key={pair.id} className='text-text'>
             <div
-              className='font-medium'
+              className='rich-content font-medium'
               dangerouslySetInnerHTML={{ __html: pair.leftHtml }}
             />
             <div className='mt-1 flex flex-wrap items-center gap-1'>
@@ -127,7 +127,7 @@ function AnswerContent({
       <ul className='list-disc list-inside space-y-1'>
         {display.selected.map((option) => (
           <li key={option.id} className='text-text'>
-            <div dangerouslySetInnerHTML={{ __html: option.textoHtml }} />
+            <div className='rich-content' dangerouslySetInnerHTML={{ __html: option.textoHtml }} />
           </li>
         ))}
       </ul>
@@ -137,7 +137,7 @@ function AnswerContent({
           <ul className='list-disc list-inside mt-1 space-y-1'>
             {display.correct.map((option) => (
               <li key={option.id}>
-                <div dangerouslySetInnerHTML={{ __html: option.textoHtml }} />
+                <div className='rich-content' dangerouslySetInnerHTML={{ __html: option.textoHtml }} />
               </li>
             ))}
           </ul>
@@ -399,7 +399,7 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
                 </div>
 
                 <div
-                  className='text-text mb-4 prose max-w-none text-sm'
+                  className='rich-content text-text mb-4 max-w-none text-sm'
                   dangerouslySetInnerHTML={{ __html: q.enunciadoHtml }}
                 />
 

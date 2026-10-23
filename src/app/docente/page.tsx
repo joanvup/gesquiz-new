@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mascot, Badge, Button, EmptyState, ThemeToggle } from '@/components';
-import { Plus, Edit3, Upload, Share2, Eye, BarChart3, Trash2, LogOut } from 'lucide-react';
+import { Plus, Edit3, Upload, Share2, Eye, BarChart3, Trash2, LogOut, FileJson } from 'lucide-react';
 
 interface QuizItem {
   id: string;
@@ -23,6 +23,8 @@ export default function DocenteDashboard() {
   const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [importing, setImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -62,6 +64,34 @@ export default function DocenteDashboard() {
     router.push('/login');
   }
 
+  async function handleImportQuiz(file: File) {
+    setImporting(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/docente/quizzes/import-json', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setError(data.error || 'No se pudo importar el quiz');
+        return;
+      }
+
+      router.push(`/docente/quizzes/${data.report.quizId}/editar`);
+    } catch {
+      setError('Error de red al importar el quiz');
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
+  }
+
   return (
     <div className='flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full'>
       {/* Header */}
@@ -82,6 +112,25 @@ export default function DocenteDashboard() {
             <Plus className='w-4 h-4' />
             Crear Nuevo Quiz
           </Link>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => importInputRef.current?.click()}
+            isLoading={importing}
+            leftIcon={<FileJson className="w-4 h-4" />}
+          >
+            Importar JSON
+          </Button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void handleImportQuiz(file);
+            }}
+          />
           <Button variant="ghost" size="md" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-1" />
             Cerrar Sesión

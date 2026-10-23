@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { z } from 'zod';
+import { deleteQuizImageFolder } from '@/lib/uploads';
 
 const quizSchema = z.object({
   titulo: z.string().min(1, 'Título requerido'),
@@ -138,6 +139,8 @@ export async function DELETE(
     }
 
     await db.quiz.delete({ where: { id } });
+    // Limpieza de las imagenes subidas para este quiz (best effort).
+    await deleteQuizImageFolder(id);
 
     return NextResponse.json({ success: true });
   } catch (err) {

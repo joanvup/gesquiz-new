@@ -102,6 +102,15 @@ function ImportarQuizPageContent({ params }: { params: Promise<{ id: string }> }
         </div>
       )}
 
+      <div className='mb-6 p-4 bg-warning-soft border border-warning/30 text-warning-text rounded-xl flex items-start gap-3'>
+        <AlertCircle className='w-5 h-5 flex-shrink-0 mt-0.5' />
+        <p className='text-sm'>
+          <strong>Importar este XML reemplaza todas las preguntas del quiz</strong>, incluidas
+          las creadas manualmente desde la pestaña «Preguntas». Si el quiz ya tiene intentos,
+          las respuestas asociadas a las preguntas eliminadas también se pierden.
+        </p>
+      </div>
+
       {/* Upload zone */}
       <div className='bg-card rounded-3xl shadow-lg border-2 border-dashed border-border p-8 text-center mb-8 transition-all'>
         <form onSubmit={handleImport} className='space-y-4'>

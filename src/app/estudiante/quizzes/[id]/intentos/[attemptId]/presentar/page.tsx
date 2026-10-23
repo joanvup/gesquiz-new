@@ -1341,7 +1341,7 @@ function PresentarQuizContent({
 
             {/* Enunciado */}
             <div
-            className="prose prose-lg max-w-none text-text mb-8"
+            className="rich-content max-w-none text-text mb-8"
               dangerouslySetInnerHTML={{ __html: question.enunciadoHtml }}
             />
 
@@ -1370,7 +1370,7 @@ function PresentarQuizContent({
                           className="text-primary-text focus:ring-primary w-5 h-5"
                         />
                         <div
-                          className="text-text flex-1"
+                          className="rich-content text-text flex-1"
                           dangerouslySetInnerHTML={{ __html: opt.textoHtml }}
                         />
                         {checked && (
@@ -1428,10 +1428,10 @@ function PresentarQuizContent({
                         key={sub.id}
                         className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-surface-alt rounded-2xl border border-border"
                       >
-                        <span
-                          className="text-sm text-text font-medium"
+                        <div
+                          className="rich-content text-sm text-text font-medium"
                           dangerouslySetInnerHTML={{ __html: sub.textoHtml }}
-                        />
+                        ></div>
                         <select
                           value={matchingPairs[sub.id] || ""}
                           onChange={(e) => handleMatchingChange(sub.id, e.target.value)}

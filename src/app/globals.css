@@ -246,6 +246,129 @@ html {
   opacity: 0;
 }
 
+/* Contenido enriquecido (editor Tiptap y preguntas con formato) */
+.rich-content {
+  color: hsl(var(--color-text));
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.rich-content > *:first-child {
+  margin-top: 0;
+}
+
+.rich-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.rich-content p {
+  margin: 0.5rem 0;
+}
+
+.rich-content h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+.rich-content h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0.9rem 0 0.4rem;
+}
+
+.rich-content ul,
+.rich-content ol {
+  margin: 0.5rem 0 0.5rem 1.4rem;
+}
+
+.rich-content ul {
+  list-style: disc;
+}
+
+.rich-content ol {
+  list-style: decimal;
+}
+
+.rich-content li {
+  margin: 0.2rem 0;
+}
+
+.rich-content li > p {
+  margin: 0;
+}
+
+.rich-content blockquote {
+  border-left: 4px solid hsl(var(--color-primary) / 0.4);
+  color: hsl(var(--color-text-muted));
+  margin: 0.75rem 0;
+  padding-left: 0.8rem;
+}
+
+.rich-content code {
+  background: hsl(var(--color-surface-alt));
+  border-radius: 0.35rem;
+  font-size: 0.9em;
+  padding: 0.1rem 0.3rem;
+}
+
+.rich-content pre {
+  background: hsl(var(--color-surface-alt));
+  border-radius: 0.75rem;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  padding: 0.75rem;
+}
+
+.rich-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.rich-content a {
+  color: hsl(var(--color-primary-text));
+  text-decoration: underline;
+}
+
+.rich-content img {
+  border-radius: 0.75rem;
+  height: auto;
+  margin: 0.5rem 0;
+  max-width: 100%;
+}
+
+.rich-content table {
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  width: 100%;
+}
+
+.rich-content th,
+.rich-content td {
+  border: 1px solid hsl(var(--color-border));
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+.rich-content th {
+  background: hsl(var(--color-surface-alt));
+}
+
+.rich-content hr {
+  border: 0;
+  border-top: 1px solid hsl(var(--color-border));
+  margin: 1rem 0;
+}
+
+/* Placeholder del editor Tiptap */
+.editor-content p.is-editor-empty:first-child::before {
+  color: hsl(var(--color-text-soft));
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
 /* Print */
 @media print {
   body {

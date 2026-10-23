@@ -4,10 +4,12 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mascot, Button, ThemeToggle } from '@/components';
-import { Save, ChevronLeft, AlertCircle } from 'lucide-react';
+import { Save, AlertCircle } from 'lucide-react';
 
 interface QuizFormProps {
   params: Promise<{ id?: string }>;
+  /** Oculta la cabecera propia cuando se muestra dentro de las pestañas del editor. */
+  embedded?: boolean;
 }
 
 interface QuizData {
@@ -29,7 +31,7 @@ interface QuizData {
   modoSeguro: boolean;
 }
 
-function QuizFormContent({ params }: QuizFormProps) {
+function QuizFormContent({ params, embedded = false }: QuizFormProps) {
   const { id } = use(params || { id: undefined });
   const isEdit = Boolean(id);
   const router = useRouter();
@@ -134,7 +136,13 @@ function QuizFormContent({ params }: QuizFormProps) {
 
   if (loading) {
     return (
-      <div className="flex-1 p-8 max-w-4xl mx-auto w-full">
+      <div
+        className={
+          embedded
+            ? 'w-full px-4 py-8 md:px-8'
+            : 'flex-1 p-8 max-w-4xl mx-auto w-full'
+        }
+      >
         <div className="text-center text-text-muted">
           <Mascot expression="think" size="lg" />
           <p className="mt-4">Cargando quiz...</p>
@@ -144,23 +152,31 @@ function QuizFormContent({ params }: QuizFormProps) {
   }
 
   return (
-    <div className='flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full'>
-      {/* Header */}
-      <div className='mb-6 flex items-center justify-between'>
-        <h1 className='text-2xl font-heading font-bold text-text flex items-center gap-2'>
-          <Mascot expression="think" size="sm" />
-          {isEdit ? 'Configurar Quiz' : 'Crear Nuevo Quiz'}
-        </h1>
-        <div className='flex items-center gap-3'>
-          <ThemeToggle />
-          <Link
-            href='/docente'
-            className='flex items-center gap-1 text-sm text-primary-text hover:underline'
-          >
-            ← Volver al panel
-          </Link>
+    <div
+      className={
+        embedded
+          ? 'w-full px-4 py-6 md:px-8'
+          : 'flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full'
+      }
+    >
+      {/* Header (oculto cuando el formulario vive dentro de las pestañas) */}
+      {!embedded && (
+        <div className='mb-6 flex items-center justify-between'>
+          <h1 className='text-2xl font-heading font-bold text-text flex items-center gap-2'>
+            <Mascot expression="think" size="sm" />
+            {isEdit ? 'Configurar Quiz' : 'Crear Nuevo Quiz'}
+          </h1>
+          <div className='flex items-center gap-3'>
+            <ThemeToggle />
+            <Link
+              href='/docente'
+              className='flex items-center gap-1 text-sm text-primary-text hover:underline'
+            >
+              ← Volver al panel
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {error && (
         <div className='mb-6 p-4 bg-danger-soft border border-danger/25 text-danger-text rounded-xl flex items-center gap-3'>
@@ -397,16 +413,20 @@ function QuizFormContent({ params }: QuizFormProps) {
   );
 }
 
-export default function QuizForm({ params }: QuizFormProps) {
-  return <QuizFormContent params={params} />;
+export default function QuizForm({ params, embedded }: QuizFormProps) {
+  return <QuizFormContent params={params} embedded={embedded} />;
 }
 
 // Re-export for dynamic route compatibility
 export function NuevoQuizPage({
   params = {} as never,
+  embedded = false,
 }: {
   params?: Promise<{ id?: string }>;
+  embedded?: boolean;
 }) {
   // Handle both nuevo and editar cases
-  return <QuizFormContent params={params || Promise.resolve({})} />;
+  return (
+    <QuizFormContent params={params || Promise.resolve({})} embedded={embedded} />
+  );
 }
