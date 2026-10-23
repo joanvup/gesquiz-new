@@ -10,8 +10,9 @@ import {
   UserRoundCheck,
   ClipboardList,
   ArrowRight,
+  Wrench,
 } from "lucide-react";
-import { Mascot } from "@/components";
+import { Mascot, Button } from "@/components";
 
 interface Resumen {
   students: number;
@@ -33,6 +34,39 @@ export default function AdminHomePage() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fixing, setFixing] = useState(false);
+  const [fixResult, setFixResult] = useState<{
+    processed: number;
+    fixed: number;
+    unresolved: number;
+    orphanedIds: number;
+  } | null>(null);
+
+  async function handleFixOrphans() {
+    setFixing(true);
+    setFixResult(null);
+    try {
+      const res = await fetch("/api/admin/fix-orphan-answers", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setFixResult(data);
+        alert(
+          `✅ Completado\n` +
+            `Procesadas: ${data.processed}\n` +
+            `Corregidas: ${data.fixed}\n` +
+            `IDs huérfanos: ${data.orphanedIds}\n` +
+            `Sin resolver: ${data.unresolved}` +
+            (data.unresolved > 0 ? "\n\nRevisa la consola/logs para los detalles." : "")
+        );
+      } else {
+        alert("Error: " + (data.error || "Desconocido"));
+      }
+    } catch {
+      alert("Error de red al ejecutar la reparación");
+    } finally {
+      setFixing(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/admin/resumen", { cache: "no-store" })
@@ -156,6 +190,34 @@ export default function AdminHomePage() {
             Abrir <ArrowRight className="w-4 h-4" />
           </span>
         </Link>
+
+        <div
+          className="bg-card border border-border rounded-3xl p-6 hover:shadow-lg hover:-translate-y-1 transition"
+          onClick={handleFixOrphans}
+          style={{ cursor: fixing ? "not-allowed" : "pointer" }}
+        >
+          <Wrench className="w-6 h-6 text-warning-text" />
+          <h3 className="font-heading font-bold text-text mt-3">Reparar respuestas huérfanas</h3>
+          <p className="text-sm text-text-muted mt-1">
+            Corrige AttemptAnswer con IDs de opciones que ya no existen
+            (tras editar preguntas en quizzes con intentos).
+          </p>
+          <Button
+            variant={fixing ? "secondary" : "primary"}
+            size="sm"
+            isLoading={fixing}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-4"
+          >
+            {fixing ? "Reparando..." : "Ejecutar reparación"}
+          </Button>
+          {fixResult && (
+            <div className="mt-4 p-3 bg-success-soft/30 rounded-xl text-xs text-success-text space-y-1">
+              <div>Procesadas: {fixResult.processed} · Corregidas: {fixResult.fixed}</div>
+              <div>IDs huérfanos: {fixResult.orphanedIds} · Sin resolver: {fixResult.unresolved}</div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

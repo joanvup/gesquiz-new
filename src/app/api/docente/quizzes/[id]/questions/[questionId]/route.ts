@@ -39,6 +39,20 @@ export async function PUT(
       );
     }
 
+    // Bloquear edición si el quiz ya tiene intentos (cambiaría IDs de opciones
+    // y rompería las respuestas ya enviadas).
+    const attempts = await db.attempt.count({ where: { quizId } });
+    if (attempts > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No se puede editar la pregunta porque el quiz ya tiene intentos registrados. " +
+            "Duplica el quiz o crea uno nuevo para modificar su contenido.",
+        },
+        { status: 409 }
+      );
+    }
+
     const body = await request.json();
 
     if (isManualEditableDbType(existing.tipo)) {
