@@ -133,7 +133,7 @@ export default function DocenteDashboard() {
                   <span className='font-semibold text-text'>{q._count.questions}</span>
                 </div>
                 <div className='flex justify-between'>
-                  <span>🏆 Puntaje máximo:</span>
+                  <span>🏆 Puntaje base:</span>
                   <span className='font-semibold text-text'>{q.puntajeMaximo}</span>
                 </div>
                 <div className='flex justify-between'>

@@ -5,6 +5,7 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { Mascot, Button, StatusBadge, EmptyState, ThemeToggle } from '@/components';
 import { ChevronRight, Download, Trophy, AlertCircle, Eye } from 'lucide-react';
+import { toGradeScale } from '@/lib/grades';
 
 interface AttemptItem {
   id: string;
@@ -101,9 +102,11 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
 
       <div className='bg-card rounded-3xl shadow-lg border border-border p-6 md:p-8 mb-8'>
         <h1 className='text-2xl font-heading font-bold text-text mb-2'>{quiz.titulo}</h1>
-        <p className='text-text-muted text-sm flex items-center gap-2'>
+        <p className='text-text-muted text-sm flex flex-wrap items-center gap-2'>
           <Trophy className="w-4 h-4 text-warning-text" />
-          <span>Puntaje máximo: {quiz.puntajeMaximo}</span>
+          <span>Puntaje base: {quiz.puntajeMaximo}</span>
+          <span>·</span>
+          <span>Escala de nota: 10–100</span>
           <span>·</span>
           <span>Total Intentos: {quiz.attempts.length}</span>
         </p>
@@ -133,40 +136,48 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
                   <th className='p-4'>Email</th>
                   <th className='p-4'>Intento</th>
                   <th className='p-4'>Estado</th>
-                  <th className='p-4'>Nota</th>
+                  <th className='p-4'>Nota (10–100)</th>
                   <th className='p-4'>Infracciones</th>
                   <th className='p-4'>Fecha Envío</th>
                   <th className='p-4 text-right'>Acciones</th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-border'>
-                {quiz.attempts.map((att) => (
-                  <tr key={att.id} className='hover:bg-surface-alt/50 transition'>
-                    <td className='p-4 font-semibold text-text'>{att.student.name}</td>
-                    <td className='p-4 text-text-muted'>{att.student.email}</td>
-                    <td className='p-4 text-text-muted'>#{att.numeroAttempt}</td>
-                    <td className='p-4'>
-                      <StatusBadge status={att.status} />
-                    </td>
-                    <td className='p-4 font-bold text-text'>
-                      {att.score !== null ? att.score : '-'} / {quiz.puntajeMaximo}
-                    </td>
-                    <td className='p-4 text-text-muted'>{att.infractions}</td>
-                    <td className='p-4 text-text-muted text-xs'>
-                      {att.submittedAt
-                        ? new Date(att.submittedAt).toLocaleString()
-                        : 'En curso'}
-                    </td>
-                    <td className='p-4 text-right'>
-                      <Link
-                        href={'/docente/intentos/' + att.id}
-                        className='px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary-text font-medium rounded-xl text-xs transition inline-flex items-center gap-1'
-                      >
-                        <Eye className="w-3 h-3" /> Ver Detalle
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {quiz.attempts.map((att) => {
+                  const grade = toGradeScale(att.score, quiz.puntajeMaximo);
+                  return (
+                    <tr key={att.id} className='hover:bg-surface-alt/50 transition'>
+                      <td className='p-4 font-semibold text-text'>{att.student.name}</td>
+                      <td className='p-4 text-text-muted'>{att.student.email}</td>
+                      <td className='p-4 text-text-muted'>#{att.numeroAttempt}</td>
+                      <td className='p-4'>
+                        <StatusBadge status={att.status} />
+                      </td>
+                      <td className='p-4 font-bold text-text'>
+                        {grade !== null ? `${grade} / 100` : '-'}
+                        {att.score !== null && (
+                          <span className='block text-xs font-normal text-text-muted'>
+                            Puntaje: {att.score} / {quiz.puntajeMaximo}
+                          </span>
+                        )}
+                      </td>
+                      <td className='p-4 text-text-muted'>{att.infractions}</td>
+                      <td className='p-4 text-text-muted text-xs'>
+                        {att.submittedAt
+                          ? new Date(att.submittedAt).toLocaleString()
+                          : 'En curso'}
+                      </td>
+                      <td className='p-4 text-right'>
+                        <Link
+                          href={'/docente/intentos/' + att.id}
+                          className='px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary-text font-medium rounded-xl text-xs transition inline-flex items-center gap-1'
+                        >
+                          <Eye className="w-3 h-3" /> Ver Detalle
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

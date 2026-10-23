@@ -5,6 +5,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mascot, Badge, StatusBadge, Button, ThemeToggle } from '@/components';
+import { toGradeScale } from '@/lib/grades';
 import {
   RotateCcw,
   Ban,
@@ -198,6 +199,8 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
     );
   }
 
+  const finalGrade = toGradeScale(attempt.score, attempt.quiz.puntajeMaximo);
+
   return (
     <div className='flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full'>
       {/* Header */}
@@ -244,10 +247,15 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
         </div>
         <div className='bg-card rounded-2xl border border-border p-5 text-center'>
           <Trophy className="w-6 h-6 mx-auto mb-2 text-warning-text" />
-          <span className='text-xs text-text-muted font-medium uppercase'>Puntaje</span>
+          <span className='text-xs text-text-muted font-medium uppercase'>Nota</span>
           <p className='font-heading font-bold text-2xl text-text mt-1'>
-            {attempt.score ?? 0} / {attempt.quiz.puntajeMaximo}
+            {finalGrade !== null ? `${finalGrade} / 100` : '-'}
           </p>
+          {attempt.score !== null && (
+            <p className='text-xs text-text-muted mt-1'>
+              Puntaje base: {attempt.score} / {attempt.quiz.puntajeMaximo}
+            </p>
+          )}
         </div>
         <div className='bg-card rounded-2xl border border-border p-5 text-center'>
           <AlertCircle className="w-6 h-6 mx-auto mb-2 text-danger" />

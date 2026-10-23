@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
+import { toGradeScale } from '@/lib/grades';
 
 export async function GET(
   request: Request,
@@ -43,8 +44,9 @@ export async function GET(
         'Email',
         'Intento',
         'Estado',
-        'Nota Obtenida',
+        'Puntaje Obtenido',
         'Puntaje Máximo',
+        'Nota (10-100)',
         'Infracciones',
         'Fecha Inicio',
         'Fecha Envío',
@@ -53,13 +55,15 @@ export async function GET(
       const rows = quiz.attempts.map((att) => {
         const started = att.startedAt ? new Date(att.startedAt).toISOString() : '';
         const submitted = att.submittedAt ? new Date(att.submittedAt).toISOString() : '';
+        const grade = toGradeScale(att.score, quiz.puntajeMaximo);
         return [
           escapeCsv(att.student.name),
           escapeCsv(att.student.email),
           att.numeroAttempt,
           att.status,
-          att.score ?? 0,
+          att.score ?? '',
           quiz.puntajeMaximo,
+          grade ?? '',
           att.infractions,
           started,
           submitted,

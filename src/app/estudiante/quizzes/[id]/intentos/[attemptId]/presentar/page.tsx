@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Mascot, Button, Badge, ProgressBar, Modal, ThemeToggle } from "@/components";
 import { Confetti } from "@/components/Confetti";
+import { toGradeScale } from "@/lib/grades";
 import {
   ArrowLeft,
   ArrowRight,
@@ -50,6 +51,7 @@ interface AttemptData {
   expiresAt?: string | null;
   currentQuestionIndex: number;
   score?: number | null;
+  puntajeMaximo?: number;
   infractions: number;
   quiz: {
     id: string;
@@ -1023,20 +1025,26 @@ function PresentarQuizContent({
       data?.score !== undefined ||
       data?.quiz?.mostrarResultado === "NOTA_Y_RESPUESTAS";
 
-    const finalScore = data?.score ?? attempt?.score ?? 0;
-    const maxScore = attempt?.quiz?.puntajeMaximo ?? data?.quiz?.puntajeMaximo ?? 0;
-    const percentage = maxScore > 0 ? Math.round((finalScore / maxScore) * 100) : 0;
+    const finalScore = data?.score ?? attempt?.score ?? null;
+    const maxScore =
+      attempt?.quiz?.puntajeMaximo ?? data?.puntajeMaximo ?? data?.quiz?.puntajeMaximo ?? 0;
+    const finalGrade = toGradeScale(finalScore, maxScore);
+    const rawPercentage =
+      finalScore !== null && maxScore > 0
+        ? Math.round((finalScore / maxScore) * 100)
+        : 0;
+    const gradePercentage = finalGrade ?? 0;
 
     // Mensaje de aliento según desempeño
     let mascotExpression: "happy" | "cheer" | "oops" = "happy";
     let encouragement = "¡Buen trabajo!";
-    if (percentage >= 90) {
+    if (gradePercentage >= 90) {
       mascotExpression = "cheer";
       encouragement = "¡Excelente puntuación! 🎉";
-    } else if (percentage >= 70) {
+    } else if (gradePercentage >= 70) {
       mascotExpression = "happy";
       encouragement = "¡Muy bien hecho!";
-    } else if (percentage >= 50) {
+    } else if (gradePercentage >= 50) {
       mascotExpression = "happy";
       encouragement = "¡Puedes mejorar! 💪";
     } else {
@@ -1076,12 +1084,15 @@ function PresentarQuizContent({
                   <span className="text-sm text-text-muted font-medium block mb-1">
                     Calificación Obtenida
                   </span>
+                  <span className="text-xs text-text-muted block mb-1">
+                    Escala 10–100
+                  </span>
                   <div className="flex items-baseline justify-center gap-2">
                     <span className="text-5xl font-heading font-extrabold text-primary-text">
-                      {finalScore}
+                      {finalGrade ?? "—"}
                     </span>
                     <span className="text-2xl text-text-muted">
-                      / {maxScore}
+                      / 100
                     </span>
                   </div>
                 </div>
@@ -1097,7 +1108,7 @@ function PresentarQuizContent({
                       cx="50" cy="50" r="42" fill="none"
                       stroke="url(#gradient)"
                       strokeWidth="8"
-                      strokeDasharray={`${percentage * 2.64}, 264`}
+                      strokeDasharray={`${gradePercentage * 2.64}, 264`}
                       className="transition-all duration-1000 ease-out"
                     />
                     <defs>
@@ -1109,10 +1120,20 @@ function PresentarQuizContent({
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-3xl font-heading font-bold text-text">
-                      {percentage}%
+                      {gradePercentage}%
                     </span>
                   </div>
                 </div>
+
+                {finalGrade === null ? (
+                  <p className="text-xs text-text-muted">
+                    Pendiente de calificación
+                  </p>
+                ) : (
+                  <p className="text-xs text-text-muted">
+                    Puntaje: {finalScore ?? 0} / {maxScore} · Aciertos: {rawPercentage}%
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-text-muted">

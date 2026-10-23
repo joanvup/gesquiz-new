@@ -164,7 +164,7 @@ function ImportarQuizPageContent({ params }: { params: Promise<{ id: string }> }
             </h3>
             {puntajeMaximo !== null && (
               <Badge variant="success">
-                Puntaje máximo: {puntajeMaximo}
+                Puntaje base: {puntajeMaximo}
               </Badge>
             )}
           </div>

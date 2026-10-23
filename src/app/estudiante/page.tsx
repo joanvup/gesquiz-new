@@ -7,6 +7,7 @@ import Link from "next/link";
 import { StartQuizButton, ResumeQuizButton } from "./StartQuizButton";
 import { Mascot, Badge, ProgressBar, EmptyState, Button, ThemeToggle } from "@/components";
 import { BookOpen, Trophy, Timer, CheckCircle2 } from "lucide-react";
+import { toGradeScale } from "@/lib/grades";
 
 async function EstudianteContent() {
   const user = await getSessionUser();
@@ -108,6 +109,10 @@ async function EstudianteContent() {
             if (quiz.ventanaCierra && now > new Date(quiz.ventanaCierra)) windowOpen = false;
 
             const latestAttempt = quiz.attempts[0];
+            const latestGrade =
+              latestAttempt?.score != null
+                ? toGradeScale(latestAttempt.score, quiz.puntajeMaximo)
+                : null;
             const isCompleted = latestAttempt && (latestAttempt.status === 'CALIFICADO' || latestAttempt.status === 'ENVIADO' || latestAttempt.status === 'ANULADO');
 
             return (
@@ -133,9 +138,9 @@ async function EstudianteContent() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Trophy className="w-4 h-4" /> Puntaje máximo
+                      <Trophy className="w-4 h-4" /> Escala de nota
                     </span>
-                    <span className="font-semibold text-text">{quiz.puntajeMaximo}</span>
+                    <span className="font-semibold text-text">10–100</span>
                   </div>
                   {quiz.tiempoLimiteMinutos && (
                     <div className="flex items-center justify-between">
@@ -162,9 +167,9 @@ async function EstudianteContent() {
                     }`}>
                       {latestAttempt.status}
                     </span>
-                    {latestAttempt.score !== null && (
+                    {latestGrade !== null && (
                       <span className="text-primary-text font-bold">
-                        ({latestAttempt.score}/{quiz.puntajeMaximo})
+                        (Nota: {latestGrade}/100)
                       </span>
                     )}
                   </div>
