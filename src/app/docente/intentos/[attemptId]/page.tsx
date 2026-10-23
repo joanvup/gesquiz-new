@@ -15,6 +15,8 @@ import {
   Trophy,
   AlertCircle,
   Loader2,
+  ShieldAlert,
+  Wrench,
 } from 'lucide-react';
 
 interface Question {
@@ -155,6 +157,9 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
   const [error, setError] = useState('');
   const [essayScores, setEssayScores] = useState<Record<string, number>>({});
   const [actionLoading, setActionLoading] = useState(false);
+  const [orphanCheck, setOrphanCheck] = useState<{ hasOrphans: boolean; orphanedAnswers: number; totalOrphanedIds: number } | null>(null);
+  const [fixing, setFixing] = useState(false);
+  const [fixResult, setFixResult] = useState<{ fixed: number; orphanedIds: number } | null>(null);
 
   useEffect(() => {
     if (!attemptId) return;
@@ -258,6 +263,44 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
     }
   }
 
+  async function handleFixOrphans() {
+    setFixing(true);
+    setFixResult(null);
+    try {
+      const res = await fetch(
+        `/api/docente/quizzes/${attempt?.quiz.id}/fix-orphan-answers`,
+        { method: 'POST' }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setFixResult(data);
+        setOrphanCheck((prev) =>
+          prev ? { ...prev, hasOrphans: false, orphanedAnswers: 0, totalOrphanedIds: 0 } : null
+        );
+        const refRes = await fetch('/api/docente/intentos/' + attemptId);
+        const refData = await refRes.json();
+        if (refData.attempt) setAttempt(refData.attempt);
+      } else {
+        setError(data.error || 'Error al reparar');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error de red al reparar');
+    } finally {
+      setFixing(false);
+    }
+  }
+
+  // Check for orphaned answers on load
+  useEffect(() => {
+    if (!attempt?.quiz.id) return;
+    fetch(`/api/docente/quizzes/${attempt.quiz.id}/fix-orphan-answers/check`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setOrphanCheck(data);
+      })
+      .catch(() => {});
+  }, [attempt?.quiz.id]);
+
   if (loading) {
     return (
       <div className="flex-1 p-8 max-w-5xl mx-auto w-full">
@@ -303,6 +346,41 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
           </Button>
         </div>
       </div>
+
+      {fixResult && (
+        <div className='mb-4 p-3 bg-success-soft text-success-text rounded-xl text-sm flex items-center gap-2'>
+          <AlertCircle className='w-4 h-4 flex-shrink-0' />
+          <span>
+            ✅ Reparación completada: {fixResult.fixed} respuesta(s) corregida(s).
+          </span>
+        </div>
+      )}
+
+      {/* Orphaned answers warning */}
+      {orphanCheck?.hasOrphans && (
+        <div className='mb-6 p-4 bg-warning-soft border border-warning/30 text-warning-text rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+          <div className='flex items-center gap-3'>
+            <ShieldAlert className='w-5 h-5 flex-shrink-0' />
+            <div>
+              <p className='font-semibold text-sm'>Respuesta con opciones eliminadas</p>
+              <p className='text-xs mt-0.5'>
+                {orphanCheck.orphanedAnswers} respuesta(s) tienen {orphanCheck.totalOrphanedIds} opción(es)
+                que ya no existen (probablemente por editar preguntas tras intentos).
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={fixing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
+            onClick={handleFixOrphans}
+            disabled={fixing}
+            className="border-warning text-warning-text hover:bg-warning-soft"
+          >
+            {fixing ? 'Reparando...' : 'Reparar ahora'}
+          </Button>
+        </div>
+      )}
 
       {/* Title */}
       <div className="mb-6 flex items-center gap-3">

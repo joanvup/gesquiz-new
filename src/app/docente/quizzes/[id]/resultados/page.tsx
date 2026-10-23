@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { Mascot, Button, StatusBadge, EmptyState, ThemeToggle } from '@/components';
-import { ChevronRight, Download, Trophy, AlertCircle, Eye, Loader2 } from 'lucide-react';
+import { ChevronRight, Download, Trophy, AlertCircle, Eye, Loader2, Wrench, ShieldAlert } from 'lucide-react';
 import { toGradeScale } from '@/lib/grades';
 
 interface AttemptItem {
@@ -36,6 +36,9 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
+  const [orphanCheck, setOrphanCheck] = useState<{ hasOrphans: boolean; orphanedAnswers: number; totalOrphanedIds: number } | null>(null);
+  const [fixing, setFixing] = useState(false);
+  const [fixResult, setFixResult] = useState<{ fixed: number; orphanedIds: number } | null>(null);
 
   async function handleExport() {
     setExporting(true);
@@ -77,6 +80,32 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
     }
   }
 
+  async function handleFixOrphans() {
+    setFixing(true);
+    setFixResult(null);
+    try {
+      const res = await fetch(`/api/docente/quizzes/${id}/fix-orphan-answers`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFixResult(data);
+        // Refresh orphan check and quiz data
+        setOrphanCheck((prev) => prev ? { ...prev, hasOrphans: false, orphanedAnswers: 0, totalOrphanedIds: 0 } : null);
+        // Reload quiz to reflect fixed answers
+        const quizRes = await fetch('/api/docente/quizzes/' + id + '/resultados');
+        const quizData = await quizRes.json();
+        if (quizData.quiz) setQuiz(quizData.quiz);
+      } else {
+        setError(data.error || 'Error al reparar');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error de red al reparar');
+    } finally {
+      setFixing(false);
+    }
+  }
+
   useEffect(() => {
     if (!id) return;
     fetch('/api/docente/quizzes/' + id + '/resultados')
@@ -93,6 +122,16 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
         setError('Error al cargar resultados');
         setLoading(false);
       });
+
+    // Check for orphaned answers
+    fetch('/api/docente/quizzes/' + id + '/fix-orphan-answers/check')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setOrphanCheck(data);
+        }
+      })
+      .catch(() => {}); // Silent fail for orphan check
   }, [id]);
 
   if (loading) {
@@ -151,6 +190,41 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
       {exportError && (
         <div className='mb-4 p-3 bg-danger-soft text-danger-text rounded-xl text-sm flex items-center gap-2'>
           <AlertCircle className='w-4 h-4 flex-shrink-0' /> {exportError}
+        </div>
+      )}
+
+      {orphanCheck?.hasOrphans && (
+        <div className='mb-4 p-4 bg-warning-soft border border-warning/30 text-warning-text rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+          <div className='flex items-center gap-3'>
+            <ShieldAlert className='w-5 h-5 flex-shrink-0' />
+            <div>
+              <p className='font-semibold text-sm'>Respuestas con opciones eliminadas detectadas</p>
+              <p className='text-xs mt-0.5'>
+                {orphanCheck.orphanedAnswers} intento(s) tienen {orphanCheck.totalOrphanedIds} opción(es)
+                que ya no existen (probablemente por editar preguntas tras intentos).
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={fixing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
+            onClick={handleFixOrphans}
+            disabled={fixing}
+            className="border-warning text-warning-text hover:bg-warning-soft"
+          >
+            {fixing ? 'Reparando...' : 'Reparar automáticamente'}
+          </Button>
+        </div>
+      )}
+
+      {fixResult && (
+        <div className='mb-4 p-3 bg-success-soft text-success-text rounded-xl text-sm flex items-center gap-2'>
+          <AlertCircle className='w-4 h-4 flex-shrink-0' />
+          <span>
+            ✅ Reparación completada: {fixResult.fixed} respuesta(s) corregida(s),
+            {fixResult.orphanedIds} ID(s) huérfano(s) procesado(s).
+          </span>
         </div>
       )}
 
