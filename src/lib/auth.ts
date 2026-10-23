@@ -1,5 +1,6 @@
 ﻿import crypto from "crypto";
 import { cookies } from "next/headers";
+import { io } from "next/cache";
 import { db } from "@/lib/db";
 
 export function hashToken(token: string): string {
@@ -37,6 +38,10 @@ export async function createSession(userId: string): Promise<string> {
 
 export async function getSessionUser() {
   try {
+    // Con Cache Components, esto excluye la lectura de sesión (y el new Date()
+    // de la validación de expiración) del prerender y la resuelve en cada request.
+    await io();
+
     const cookieStore = await cookies();
     const token = cookieStore.get("session")?.value;
     if (!token) return null;

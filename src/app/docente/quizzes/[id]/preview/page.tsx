@@ -3,7 +3,8 @@
 import { Suspense } from "react";
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { Mascot, Badge, Button, ProgressBar } from '@/components';
+import { Mascot, Badge, Button, ProgressBar, ThemeToggle } from '@/components';
+import { isMultipleAnswerQuestion } from '@/lib/questions';
 import { ChevronLeft, ChevronRight, Eye, AlertTriangle } from 'lucide-react';
 
 interface OptionItem {
@@ -16,6 +17,7 @@ interface QuestionItem {
   tipo: string;
   defaultGrade: number;
   enunciadoHtml: string;
+  datosJson?: string | null;
   options: OptionItem[];
 }
 interface QuizData {
@@ -63,10 +65,10 @@ function PreviewQuizPageContent({ params }: { params: Promise<{ id: string }> })
   if (error || !quiz) {
     return (
       <div className="flex-1 p-8 max-w-4xl mx-auto w-full text-center">
-        <div className="text-red-500 mb-4 flex items-center justify-center gap-2">
+        <div className="text-danger mb-4 flex items-center justify-center gap-2">
           <AlertTriangle className="w-6 h-6" /> {error || 'Quiz no encontrado'}
         </div>
-        <Link href='/docente' className='text-primary underline text-sm flex items-center justify-center gap-1'>
+        <Link href='/docente' className='text-primary-text underline text-sm flex items-center justify-center gap-1'>
           <ChevronLeft className="w-4 h-4" /> Volver al panel
         </Link>
       </div>
@@ -79,13 +81,16 @@ function PreviewQuizPageContent({ params }: { params: Promise<{ id: string }> })
   return (
     <div className='flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full'>
       {/* Banner de preview */}
-      <div className='bg-amber-50/50 border border-amber-200 text-amber-800 px-4 py-3 rounded-2xl mb-6 text-sm flex justify-between items-center'>
+      <div className='bg-warning-soft/60 border border-warning/25 text-warning-text px-4 py-3 rounded-2xl mb-6 text-sm flex justify-between items-center'>
         <span className="flex items-center gap-2">
           <Eye className="w-4 h-4" /> Modo vista previa — no se registrarán intentos
         </span>
-        <Link href='/docente' className='px-3 py-1 bg-white border border-amber-300 rounded-lg font-medium text-xs hover:bg-amber-100 transition'>
-          Salir
-        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Link href='/docente' className='px-3 py-1 bg-card border border-warning/30 rounded-lg font-medium text-xs hover:bg-warning-soft transition'>
+            Salir
+          </Link>
+        </div>
       </div>
 
       {/* Quiz header */}
@@ -97,7 +102,7 @@ function PreviewQuizPageContent({ params }: { params: Promise<{ id: string }> })
         {quiz.instrucciones && (
           <div className='p-4 bg-surface-alt rounded-xl text-sm text-text'>
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <AlertTriangle className="w-4 h-4 text-warning-text" />
               <strong>Instrucciones:</strong>
             </div>
             <div dangerouslySetInnerHTML={{ __html: quiz.instrucciones }} />
@@ -154,26 +159,21 @@ function PreviewQuizPageContent({ params }: { params: Promise<{ id: string }> })
                 key={opt.id}
                 className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                   opt.esCorrecta
-                    ? 'border-green-300 bg-green-50/50'
+                    ? 'border-success/30 bg-success-soft/60'
                     : 'border-border hover:border-primary hover:bg-primary/5'
                 }`}
               >
                 <input
-                  type={
-                    currentQ.tipo === 'MULTICHOICE' &&
-                    currentQ.options.filter((o) => o.esCorrecta).length > 1
-                      ? 'checkbox'
-                      : 'radio'
-                  }
+                  type={isMultipleAnswerQuestion(currentQ) ? 'checkbox' : 'radio'}
                   name='preview-option'
-                  className='mt-1 text-primary focus:ring-primary'
+                  className='mt-1 text-primary-text focus:ring-primary'
                 />
                 <span
                   className='text-sm text-text flex-1'
                   dangerouslySetInnerHTML={{ __html: opt.textoHtml }}
                 />
                 {opt.esCorrecta && (
-                  <span className='ml-auto text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-semibold'>
+                  <span className='ml-auto text-xs bg-success-soft text-success-text px-2 py-1 rounded-full font-semibold'>
                     ✓ Correcta
                   </span>
                 )}

@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:admin": "tsx prisma/create-admin.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {
@@ -21,6 +22,7 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
+    "exceljs": "^4.4.0",
     "fast-xml-parser": "^5.11.2",
     "next": "16.4.2",
     "prisma": "7.10.1",

@@ -1,6 +1,8 @@
 // Componentes compartidos
 export { Mascot } from "./Mascot";
 export { Confetti } from "./Confetti";
+export { ThemeProvider, useTheme } from "./theme/ThemeProvider";
+export { ThemeToggle } from "./theme/ThemeToggle";
 
 // UI Components
 export { Button } from "./ui/button";

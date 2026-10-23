@@ -22,6 +22,17 @@ async function main() {
   await prisma.importBatch.deleteMany();
   await prisma.user.deleteMany();
 
+  const adminPasswordHash = await bcrypt.hash("Admin123!", 10);
+  const admin = await prisma.user.create({
+    data: {
+      email: "admin@quizcolegio.test",
+      passwordHash: adminPasswordHash,
+      name: "Administrador",
+      role: "ADMIN",
+    },
+  });
+  console.log(`Admin creado: ${admin.email}`);
+
   const docentePasswordHash = await bcrypt.hash("Docente123!", 10);
   const docente = await prisma.user.create({
     data: {

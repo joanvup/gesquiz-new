@@ -11,7 +11,7 @@ export type ButtonVariant =
   | "play";
 export type ButtonSize = "sm" | "md" | "lg" | "xl";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
@@ -21,21 +21,21 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const baseClasses =
-  "inline-flex items-center justify-center rounded-xl font-heading font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center rounded-xl font-heading font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary text-white hover:brightness-110 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 focus-visible:ring-primary",
+    "bg-primary text-primary-foreground hover:brightness-110 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 focus-visible:ring-primary",
   secondary:
     "bg-surface-alt text-text border border-border hover:bg-surface-alt/80 focus-visible:ring-border-strong",
   ghost:
     "bg-transparent text-text-muted hover:bg-surface-alt/50 focus-visible:ring-border-strong",
   success:
-    "bg-green-500 text-white hover:bg-green-600 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 focus-visible:ring-green-500",
+    "bg-success text-success-foreground hover:bg-success/90 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 focus-visible:ring-success",
   danger:
-    "bg-red-500 text-white hover:bg-red-600 hover:shadow-lg focus-visible:ring-red-500",
+    "bg-danger text-danger-foreground hover:bg-danger/90 hover:shadow-lg focus-visible:ring-danger",
   play:
-    "bg-gradient-to-r from-primary to-accent-teal text-white hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 active:scale-95 focus-visible:ring-primary font-heading text-xl",
+    "bg-gradient-to-r from-primary to-accent-teal text-primary-foreground hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 active:scale-95 focus-visible:ring-primary font-heading text-xl",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

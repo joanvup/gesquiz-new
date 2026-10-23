@@ -1,12 +1,11 @@
-﻿// No "use client" aquí. Es un Server Component.
+// No "use client" aquí. Es un Server Component.
 import { getSessionUser, destroySession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getOrCreateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 import { Suspense } from "react";
 import Link from "next/link";
 import { StartQuizButton, ResumeQuizButton } from "./StartQuizButton";
-import { Mascot, Badge, ProgressBar, EmptyState, Button } from "@/components";
+import { Mascot, Badge, ProgressBar, EmptyState, Button, ThemeToggle } from "@/components";
 import { BookOpen, Trophy, Timer, CheckCircle2 } from "lucide-react";
 
 async function EstudianteContent() {
@@ -14,8 +13,6 @@ async function EstudianteContent() {
   if (!user || user.role !== "STUDENT") {
     redirect("/login");
   }
-
-  const csrfToken = await getOrCreateCsrfToken();
 
   async function logoutAction() {
     "use server";
@@ -62,30 +59,32 @@ async function EstudianteContent() {
   return (
     <div className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full">
       {/* Header */}
-      <div className="flex justify-between items-center bg-card p-6 rounded-3xl shadow-lg border border-border mb-8">
-        <div className="flex items-center gap-4">
-          <div className="bg-primary/10 rounded-full p-2">
+      <div className="flex flex-col gap-4 bg-card p-6 rounded-3xl shadow-lg border border-border mb-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="shrink-0 bg-primary/10 rounded-full p-2">
             <Mascot expression="wave" size="md" />
           </div>
-          <div>
-            <h1 className="text-2xl font-heading font-bold text-text">Panel del Estudiante</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl font-heading font-bold text-text sm:text-2xl">Panel del Estudiante</h1>
             <p className="text-text-muted">
-              ¡Hola, <span className="font-semibold text-primary">{user.name}</span>!
-              <span className="text-sm"> ({user.email})</span>
+              ¡Hola, <span className="font-semibold text-primary-text">{user.name}</span>!
+              <span className="block text-sm break-all sm:inline"> ({user.email})</span>
             </p>
           </div>
         </div>
-        <form action={logoutAction}>
-          <input type="hidden" name="csrfToken" value={csrfToken} />
-          <Button variant="ghost" size="md" type="submit">
-            Cerrar Sesión
-          </Button>
-        </form>
+        <div className="flex items-center justify-end gap-2">
+          <ThemeToggle />
+          <form action={logoutAction}>
+            <Button variant="ghost" size="md" type="submit">
+              Cerrar Sesión
+            </Button>
+          </form>
+        </div>
       </div>
 
       {/* Section header */}
       <div className="flex items-center gap-3 mb-6">
-        <BookOpen className="w-6 h-6 text-primary" />
+        <BookOpen className="w-6 h-6 text-primary-text" />
         <h2 className="text-xl font-heading font-bold text-text">Tus Quizzes Asignados</h2>
       </div>
 
@@ -106,7 +105,7 @@ async function EstudianteContent() {
 
             let windowOpen = true;
             if (quiz.ventanaAbre && now < new Date(quiz.ventanaAbre)) windowOpen = false;
-            if (quiz.ventanaCierra && now > new Date(quiz.ventanaCierre)) windowOpen = false;
+            if (quiz.ventanaCierra && now > new Date(quiz.ventanaCierra)) windowOpen = false;
 
             const latestAttempt = quiz.attempts[0];
             const isCompleted = latestAttempt && (latestAttempt.status === 'CALIFICADO' || latestAttempt.status === 'ENVIADO' || latestAttempt.status === 'ANULADO');
@@ -159,12 +158,12 @@ async function EstudianteContent() {
                     <CheckCircle2 className="w-3 h-3" />
                     Último estado:{" "}
                     <span className={`font-medium ${
-                      latestAttempt.status === 'CALIFICADO' ? 'text-green-600' : 'text-amber-600'
+                      latestAttempt.status === 'CALIFICADO' ? 'text-success-text' : 'text-warning-text'
                     }`}>
                       {latestAttempt.status}
                     </span>
                     {latestAttempt.score !== null && (
-                      <span className="text-primary font-bold">
+                      <span className="text-primary-text font-bold">
                         ({latestAttempt.score}/{quiz.puntajeMaximo})
                       </span>
                     )}

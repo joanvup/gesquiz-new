@@ -8,12 +8,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary/10 text-primary",
+        default: "bg-primary-soft text-primary-text",
         secondary: "bg-surface-alt text-text-muted",
-        success: "bg-green-100 text-green-800",
-        warning: "bg-amber-100 text-amber-800",
-        danger: "bg-red-100 text-red-800",
-        info: "bg-blue-100 text-blue-800",
+        success: "bg-success-soft text-success-text",
+        warning: "bg-warning-soft text-warning-text",
+        danger: "bg-danger-soft text-danger-text",
+        info: "bg-info-soft text-info-text",
         outline: "border border-border text-text-muted",
       },
     },
@@ -38,7 +38,10 @@ export function Badge({ className, variant, children, ...props }: BadgeProps) {
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { text: string; variant: "success" | "warning" | "danger" | "info" }> = {
+  const map: Record<
+    string,
+    { text: string; variant: "success" | "warning" | "danger" | "info" | "secondary" }
+  > = {
     CALIFICADO: { text: "Calificado", variant: "success" },
     ENVIADO: { text: "Enviado", variant: "info" },
     EN_CURSO: { text: "En curso", variant: "warning" },

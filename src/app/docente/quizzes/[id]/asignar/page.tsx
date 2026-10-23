@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
-import { Mascot, Button, Badge } from '@/components';
+import { Mascot, Button, Badge, ThemeToggle } from '@/components';
 import { ChevronLeft, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface Group {
@@ -119,22 +119,25 @@ function AsignarQuizPageContent({ params }: { params: Promise<{ id: string }> })
           <Mascot expression="think" size="sm" />
           Asignar Quiz
         </h1>
-        <Link
-          href='/docente'
-          className='flex items-center gap-1 text-sm text-primary hover:underline'
-        >
-          <ChevronLeft className="w-4 h-4" /> Volver al panel
-        </Link>
+        <div className='flex items-center gap-3'>
+          <ThemeToggle />
+          <Link
+            href='/docente'
+            className='flex items-center gap-1 text-sm text-primary-text hover:underline'
+          >
+            <ChevronLeft className="w-4 h-4" /> Volver al panel
+          </Link>
+        </div>
       </div>
 
       {error && (
-        <div className='mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3'>
+        <div className='mb-6 p-4 bg-danger-soft border border-danger/25 text-danger-text rounded-xl flex items-center gap-3'>
           <AlertCircle className="w-5 h-5" /> {error}
         </div>
       )}
 
       {message && (
-        <div className='mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-3'>
+        <div className='mb-6 p-4 bg-success-soft border border-success/25 text-success-text rounded-xl flex items-center gap-3'>
           <CheckCircle2 className="w-5 h-5" /> {message}
         </div>
       )}
@@ -171,7 +174,7 @@ function AsignarQuizPageContent({ params }: { params: Promise<{ id: string }> })
                       type='checkbox'
                       checked={isSelected}
                       onChange={() => toggleGroup(g.id)}
-                      className='rounded border-border text-primary focus:ring-primary w-5 h-5'
+                      className='rounded border-border text-primary-text focus:ring-primary w-5 h-5'
                     />
                     <div>
                       <div className='text-sm font-medium text-text'>{g.name}</div>
@@ -219,7 +222,7 @@ function AsignarQuizPageContent({ params }: { params: Promise<{ id: string }> })
                       type='checkbox'
                       checked={isSelected}
                       onChange={() => toggleStudent(s.id)}
-                      className='rounded border-border text-primary focus:ring-primary w-5 h-5'
+                      className='rounded border-border text-primary-text focus:ring-primary w-5 h-5'
                     />
                     <div className="flex-1 min-w-0">
                       <div className='text-sm font-medium text-text truncate'>{s.name}</div>

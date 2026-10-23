@@ -1,10 +1,10 @@
-﻿'use client';
+'use client';
 
 import { Suspense } from 'react';
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mascot, Badge, StatusBadge, Button } from '@/components';
+import { Mascot, Badge, StatusBadge, Button, ThemeToggle } from '@/components';
 import {
   RotateCcw,
   Ban,
@@ -188,10 +188,10 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
   if (error || !attempt) {
     return (
       <div className="flex-1 p-8 max-w-4xl mx-auto w-full">
-        <div className="p-4 bg-red-50 text-red-700 rounded-xl mb-4 flex items-center gap-2">
+        <div className="p-4 bg-danger-soft text-danger-text rounded-xl mb-4 flex items-center gap-2">
           <AlertCircle className="w-4 h-4" /> {error || 'No encontrado'}
         </div>
-        <Link href='/docente' className='text-primary underline text-sm flex items-center w-max gap-1'>
+        <Link href='/docente' className='text-primary-text underline text-sm flex items-center w-max gap-1'>
           ← Volver al panel
         </Link>
       </div>
@@ -203,11 +203,12 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
       {/* Header */}
       <div className='mb-6 flex items-center justify-between'>
         <div className='flex items-center gap-2 text-sm text-text-muted'>
-          <Link href={'/docente/quizzes/' + attempt.quiz.id + '/resultados'} className='hover:text-primary transition text-sm flex items-center'>
+          <Link href={'/docente/quizzes/' + attempt.quiz.id + '/resultados'} className='hover:text-primary-text transition text-sm flex items-center'>
             ← Resultados
           </Link>
         </div>
-        <div className='flex gap-3'>
+        <div className='flex items-center gap-3'>
+          <ThemeToggle />
           <Button variant="secondary" size="sm" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={handleReopen} disabled={actionLoading}>
             {actionLoading ? <Loader2 className="animate-spin w-4 h-4" /> : "Reabrir Intento"}
           </Button>
@@ -235,26 +236,26 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
       {/* Stats */}
       <div className='grid grid-cols-1 md:grid-cols-4 gap-4 mb-8'>
         <div className='bg-card rounded-2xl border border-border p-5 text-center'>
-          <ClipboardCheck className="w-6 h-6 mx-auto mb-2 text-primary" />
+          <ClipboardCheck className="w-6 h-6 mx-auto mb-2 text-primary-text" />
           <span className='text-xs text-text-muted font-medium uppercase'>Estado</span>
           <div className='mt-1'>
             <StatusBadge status={attempt.status} />
           </div>
         </div>
         <div className='bg-card rounded-2xl border border-border p-5 text-center'>
-          <Trophy className="w-6 h-6 mx-auto mb-2 text-amber-400" />
+          <Trophy className="w-6 h-6 mx-auto mb-2 text-warning-text" />
           <span className='text-xs text-text-muted font-medium uppercase'>Puntaje</span>
           <p className='font-heading font-bold text-2xl text-text mt-1'>
             {attempt.score ?? 0} / {attempt.quiz.puntajeMaximo}
           </p>
         </div>
         <div className='bg-card rounded-2xl border border-border p-5 text-center'>
-          <AlertCircle className="w-6 h-6 mx-auto mb-2 text-red-500" />
+          <AlertCircle className="w-6 h-6 mx-auto mb-2 text-danger" />
           <span className='text-xs text-text-muted font-medium uppercase'>Infracciones</span>
           <p className='font-heading font-bold text-2xl text-text mt-1'>{attempt.infractions}</p>
         </div>
         <div className='bg-card rounded-2xl border border-border p-5 text-center'>
-          <Clock className="w-6 h-6 mx-auto mb-2 text-primary" />
+          <Clock className="w-6 h-6 mx-auto mb-2 text-primary-text" />
           <span className='text-xs text-text-muted font-medium uppercase'>Envío</span>
           <p className='text-sm font-semibold text-text mt-1'>
             {attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : 'En curso'}
@@ -265,7 +266,7 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
       {/* Questions */}
       <div className='bg-card rounded-3xl shadow-lg border border-border mb-8 p-6'>
         <h3 className='font-heading font-bold text-text text-lg mb-6 flex items-center gap-2'>
-          <ClipboardCheck className="w-5 h-5 text-primary" />
+          <ClipboardCheck className="w-5 h-5 text-primary-text" />
           Preguntas y Respuestas del Estudiante
         </h3>
         <div className='space-y-8'>
@@ -283,7 +284,7 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
                 key={q.id}
                 className={`p-6 rounded-2xl border ${
                   isEssay
-                    ? 'bg-indigo-50/30 border-indigo-200'
+                    ? 'bg-info-soft/60 border-info/30'
                     : 'bg-surface-alt border-border'
                 }`}
               >
@@ -325,9 +326,9 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
 
                 {/* Calificación de ESSAY */}
                 {isEssay && (
-                  <div className='bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-end gap-4'>
+                  <div className='bg-primary-soft border border-primary/20 rounded-xl p-4 flex items-end gap-4'>
                     <div className='flex-1'>
-                      <label className='block text-xs font-semibold text-primary mb-1'>
+                      <label className='block text-xs font-semibold text-primary-text mb-1'>
                         Calificación manual (0 a {q.defaultGrade}):
                       </label>
                       <input
@@ -362,7 +363,7 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
       {/* Timeline */}
       <div className='bg-card rounded-3xl shadow-lg border border-border p-6'>
         <h3 className='font-heading font-bold text-text text-lg mb-6 flex items-center gap-2'>
-          <Clock className="w-5 h-5 text-primary" />
+          <Clock className="w-5 h-5 text-primary-text" />
           Línea de Tiempo de Auditoría
         </h3>
         {attempt.events.length === 0 ? (

@@ -66,7 +66,9 @@ function sanitize(html: string | undefined): string {
 
 function extractText(node: any): string {
   if (node === null || node === undefined) return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean') {
+    return String(node);
+  }
   if (node['#text'] !== undefined) return String(node['#text']);
   if (node['__cdata'] !== undefined) return String(node['__cdata']);
   if (node.text !== undefined) return extractText(node.text);
@@ -236,8 +238,20 @@ export function parseMoodleXml(xmlContent: string | Buffer, options?: { maxBytes
     let dbTipo = 'UNSUPPORTED';
     let noPuntua = false;
     let isSupported = true;
+    let datosJson: string | undefined;
 
-    if (normalizedType === 'multichoice') dbTipo = 'MULTICHOICE';
+    if (normalizedType === 'multichoice') {
+      dbTipo = 'MULTICHOICE';
+
+      // Moodle distingue respuesta única (`single=true`) de multi-respuesta.
+      // Lo guardamos para no inferirlo solo por la cantidad de opciones.
+      const singleText = extractText(qNode.single).trim().toLowerCase();
+      const singleAttr = String(qNode['@_single'] ?? '').trim().toLowerCase();
+      const singleValue = singleText || singleAttr;
+      if (singleValue === 'true' || singleValue === '1' || singleValue === 'false' || singleValue === '0') {
+        datosJson = JSON.stringify({ single: singleValue === 'true' || singleValue === '1' });
+      }
+    }
     else if (normalizedType === 'truefalse') dbTipo = 'TRUEFALSE';
     else if (normalizedType === 'shortanswer') dbTipo = 'SHORTANSWER';
     else if (normalizedType === 'numerical') dbTipo = 'NUMERICAL';
@@ -319,6 +333,7 @@ export function parseMoodleXml(xmlContent: string | Buffer, options?: { maxBytes
       category: currentCategory,
       orden: i + 1,
       noPuntua,
+      datosJson,
       options
     });
   }

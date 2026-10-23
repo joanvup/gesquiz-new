@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
+import { isMultipleAnswerQuestion } from '@/lib/questions';
 
 export async function GET(
   request: Request,
@@ -116,6 +117,7 @@ export async function GET(
         tipo: question.tipo,
         enunciadoHtml: question.enunciadoHtml,
         defaultGrade: question.defaultGrade,
+        multiple: isMultipleAnswerQuestion(question),
         options: orderedOptions,
       },
       answer: existingAnswer ? {

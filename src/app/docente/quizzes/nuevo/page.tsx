@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mascot, Button } from '@/components';
+import { Mascot, Button, ThemeToggle } from '@/components';
 import { Save, ChevronLeft, AlertCircle } from 'lucide-react';
 
 interface QuizFormProps {
@@ -147,16 +147,19 @@ function QuizFormContent({ params }: QuizFormProps) {
           <Mascot expression="think" size="sm" />
           {isEdit ? 'Configurar Quiz' : 'Crear Nuevo Quiz'}
         </h1>
-        <Link
-          href='/docente'
-          className='flex items-center gap-1 text-sm text-primary hover:underline'
-        >
-          ← Volver al panel
-        </Link>
+        <div className='flex items-center gap-3'>
+          <ThemeToggle />
+          <Link
+            href='/docente'
+            className='flex items-center gap-1 text-sm text-primary-text hover:underline'
+          >
+            ← Volver al panel
+          </Link>
+        </div>
       </div>
 
       {error && (
-        <div className='mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3'>
+        <div className='mb-6 p-4 bg-danger-soft border border-danger/25 text-danger-text rounded-xl flex items-center gap-3'>
           <AlertCircle className="w-5 h-5" />
           {error}
         </div>
@@ -298,7 +301,7 @@ function QuizFormContent({ params }: QuizFormProps) {
               type='checkbox'
               checked={permitirRetroceso}
               onChange={(e) => setPermitirRetroceso(e.target.checked)}
-              className='rounded border-border text-primary focus:ring-primary'
+              className='rounded border-border text-primary-text focus:ring-primary'
             />
             Permitir retroceso entre preguntas
           </label>
@@ -308,7 +311,7 @@ function QuizFormContent({ params }: QuizFormProps) {
               type='checkbox'
               checked={ordenAleatorioPreguntas}
               onChange={(e) => setOrdenAleatorioPreguntas(e.target.checked)}
-              className='rounded border-border text-primary focus:ring-primary'
+              className='rounded border-border text-primary-text focus:ring-primary'
             />
             Orden aleatorio de preguntas
           </label>
@@ -318,7 +321,7 @@ function QuizFormContent({ params }: QuizFormProps) {
               type='checkbox'
               checked={ordenAleatorioOpciones}
               onChange={(e) => setOrdenAleatorioOpciones(e.target.checked)}
-              className='rounded border-border text-primary focus:ring-primary'
+              className='rounded border-border text-primary-text focus:ring-primary'
             />
             Orden aleatorio de opciones
           </label>
@@ -328,7 +331,7 @@ function QuizFormContent({ params }: QuizFormProps) {
               type='checkbox'
               checked={modoSeguro}
               onChange={(e) => setModoSeguro(e.target.checked)}
-              className='rounded border-border text-primary focus:ring-primary'
+              className='rounded border-border text-primary-text focus:ring-primary'
             />
             Activar modo seguro anti-copia
           </label>
@@ -338,7 +341,7 @@ function QuizFormContent({ params }: QuizFormProps) {
               type='checkbox'
               checked={publicado}
               onChange={(e) => setPublicado(e.target.checked)}
-              className='rounded border-primary text-primary focus:ring-primary'
+              className='rounded border-primary text-primary-text focus:ring-primary'
             />
             Publicar quiz (visible para estudiantes asignados)
           </label>

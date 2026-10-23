@@ -1,11 +1,11 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect, use, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Mascot, Button, Badge, ProgressBar, Modal } from "@/components";
+import { Mascot, Button, Badge, ProgressBar, Modal, ThemeToggle } from "@/components";
 import { Confetti } from "@/components/Confetti";
 import {
   ArrowLeft,
@@ -14,10 +14,12 @@ import {
   CheckCircle,
   XCircle,
   Timer,
-  Trophy,
   HelpCircle,
-  ChevronUp,
   AlertCircle,
+  AlertTriangle,
+  Maximize2,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 
 interface Option {
@@ -33,6 +35,7 @@ interface Question {
   tipo: string;
   enunciadoHtml: string;
   defaultGrade: number;
+  multiple: boolean;
   options: Option[];
 }
 
@@ -47,6 +50,7 @@ interface AttemptData {
   expiresAt?: string | null;
   currentQuestionIndex: number;
   score?: number | null;
+  infractions: number;
   quiz: {
     id: string;
     titulo: string;
@@ -54,6 +58,8 @@ interface AttemptData {
     puntajeMaximo: number;
     mostrarResultado: string;
     tiempoLimiteMinutos?: number | null;
+    modoSeguro: boolean;
+    maxInfracciones: number;
     questions: { id: string; tipo: string }[];
   };
   answers: {
@@ -64,7 +70,6 @@ interface AttemptData {
 }
 
 const XP_PER_CORRECT = 10;
-const XP_BONUS_TIME = 5;
 
 function PresentarQuizContent({
   params,
@@ -98,6 +103,30 @@ function PresentarQuizContent({
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Modo seguro
+  const [safeModeStarted, setSafeModeStarted] = useState(false);
+  const [enteringSafeMode, setEnteringSafeMode] = useState(false);
+  const [safeModeError, setSafeModeError] = useState("");
+  const [sessionError, setSessionError] = useState("");
+  const [infractions, setInfractions] = useState(0);
+  const [showInfractionWarning, setShowInfractionWarning] = useState(false);
+  const [infractionMessage, setInfractionMessage] = useState("");
+  const [infractionError, setInfractionError] = useState("");
+  const [requiresFullscreen, setRequiresFullscreen] = useState(false);
+  const [reenteringFullscreen, setReenteringFullscreen] = useState(false);
+
+  const safeModeActiveRef = useRef(false);
+  const endingSafeModeRef = useRef(false);
+  const submittingRef = useRef(false);
+  const sessionTokenRef = useRef<string | null>(null);
+  const tokenRequestRef = useRef<Promise<string | null> | null>(null);
+  const lastInfractionAtRef = useRef(0);
+  const infractionInFlightRef = useRef(false);
+  const heartbeatInFlightRef = useRef(false);
+
+  const maxInfracciones = attempt?.quiz.maxInfracciones ?? 3;
+  const safeModeEnabled = Boolean(attempt?.quiz.modoSeguro);
+
   const initializeAnswerState = (q: Question, ans: AnswerData | null) => {
     setSelectedOptions([]);
     setTextValue("");
@@ -109,7 +138,10 @@ function PresentarQuizContent({
       try {
         const parsed = ans.respuestaJson ? JSON.parse(ans.respuestaJson) : [];
         if (Array.isArray(parsed)) {
-          setSelectedOptions(parsed.map(String));
+          const values = parsed.map(String);
+          // Preguntas de respuesta única: limpia selecciones múltiples
+          // guardadas por versiones anteriores.
+          setSelectedOptions(q.multiple ? values : values.slice(-1));
         } else if (parsed) {
           setSelectedOptions([String(parsed)]);
         }
@@ -130,6 +162,80 @@ function PresentarQuizContent({
     }
   };
 
+  const exitFullscreen = useCallback(async () => {
+    if (typeof document === "undefined" || !document.fullscreenElement) return;
+    try {
+      await document.exitFullscreen();
+    } catch {
+      // El navegador puede bloquear la salida si ya no hay pantalla completa.
+    }
+  }, []);
+
+  const handleSessionBlocked = useCallback((message: string) => {
+    setSessionError(message);
+    setSafeModeStarted(false);
+    safeModeActiveRef.current = false;
+    endingSafeModeRef.current = true;
+    setShowInfractionWarning(false);
+    setRequiresFullscreen(false);
+    void exitFullscreen();
+  }, [exitFullscreen]);
+
+  const ensureSessionToken = useCallback(
+    async (attemptData: AttemptData) => {
+      const key = `attempt_token_${attemptId}`;
+
+      try {
+        const existing = sessionStorage.getItem(key);
+        if (existing) {
+          sessionTokenRef.current = existing;
+          return existing;
+        }
+      } catch {
+        throw new Error("El navegador bloqueó el almacenamiento de la sesión segura.");
+      }
+
+      if (!attemptData.quiz.modoSeguro) return null;
+
+      // Si dos cargas (o React Strict Mode) piden token a la vez, comparten la
+      // misma petición para no rotar el token dos veces y dejar una sesión vieja.
+      if (tokenRequestRef.current) return tokenRequestRef.current;
+
+      const request = (async () => {
+        const res = await fetch(`/api/estudiante/quizzes/${attemptData.quiz.id}/intentos`, {
+          method: "POST",
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data.success || !data.sessionToken) {
+          throw new Error(data.error || "No se pudo validar la sesión del intento.");
+        }
+
+        if (data.attempt?.id && data.attempt.id !== attemptData.id) {
+          throw new Error("El intento activo cambió. Vuelve al panel e inicia el quiz de nuevo.");
+        }
+
+        try {
+          sessionStorage.setItem(key, data.sessionToken);
+        } catch {
+          throw new Error("El navegador bloqueó el almacenamiento de la sesión segura.");
+        }
+
+        sessionTokenRef.current = data.sessionToken;
+        return data.sessionToken as string;
+      })();
+
+      tokenRequestRef.current = request;
+
+      try {
+        return await request;
+      } finally {
+        tokenRequestRef.current = null;
+      }
+    },
+    [attemptId]
+  );
+
   const loadAttemptAndQuestion = useCallback(
     async (targetIndex: number) => {
       setLoading(true);
@@ -142,11 +248,31 @@ function PresentarQuizContent({
           return;
         }
         setAttempt(dataAttempt.attempt);
+        setInfractions(dataAttempt.attempt.infractions ?? 0);
 
         if (dataAttempt.attempt.status !== "EN_CURSO") {
           setResultsData(dataAttempt.attempt);
+          if (safeModeActiveRef.current) {
+            endingSafeModeRef.current = true;
+            safeModeActiveRef.current = false;
+            void exitFullscreen();
+          }
           setLoading(false);
           return;
+        }
+
+        if (dataAttempt.attempt.quiz.modoSeguro) {
+          try {
+            await ensureSessionToken(dataAttempt.attempt);
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : "No se pudo validar la sesión segura.";
+            if (safeModeActiveRef.current) {
+              handleSessionBlocked(message);
+              return;
+            }
+            setSafeModeError(message);
+          }
         }
 
         const resQ = await fetch(
@@ -169,10 +295,17 @@ function PresentarQuizContent({
         setLoading(false);
       }
     },
-    [attemptId, router]
+    [attemptId, ensureSessionToken, exitFullscreen, handleSessionBlocked, router]
   );
 
   const handleAutoSubmitDueToExpiration = useCallback(async () => {
+    submittingRef.current = true;
+    endingSafeModeRef.current = true;
+    safeModeActiveRef.current = false;
+    setShowInfractionWarning(false);
+    setRequiresFullscreen(false);
+    await exitFullscreen();
+
     try {
       const res = await fetch(`/api/estudiante/intentos/${attemptId}/enviar`, {
         method: "POST",
@@ -182,8 +315,220 @@ function PresentarQuizContent({
       setShowConfetti(true);
     } catch {
       router.push("/estudiante");
+    } finally {
+      submittingRef.current = false;
     }
-  }, [attemptId, router]);
+  }, [attemptId, exitFullscreen, router]);
+
+  const reportInfraction = useCallback(
+    async (tipo: string, detalle: string) => {
+      if (!safeModeEnabled || !safeModeActiveRef.current) return;
+      if (endingSafeModeRef.current || submittingRef.current || sessionError) return;
+
+      const now = Date.now();
+      if (now - lastInfractionAtRef.current < 1500) return;
+      if (infractionInFlightRef.current) return;
+      lastInfractionAtRef.current = now;
+      infractionInFlightRef.current = true;
+
+      let token = sessionTokenRef.current;
+      if (!token) {
+        try {
+          token = sessionStorage.getItem(`attempt_token_${attemptId}`);
+        } catch {
+          token = null;
+        }
+      }
+
+      if (!token) {
+        infractionInFlightRef.current = false;
+        handleSessionBlocked(
+          "No se pudo validar la sesión segura del intento. Vuelve al panel e ingresa nuevamente."
+        );
+        return;
+      }
+      sessionTokenRef.current = token;
+
+      const isFullscreenStillMissing = () =>
+        tipo === "SALIDA_PANTALLA_COMPLETA" &&
+        (typeof document === "undefined" || !document.fullscreenElement);
+
+      try {
+        const res = await fetch(`/api/estudiante/intentos/${attemptId}/infracciones`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-attempt-session": token,
+          },
+          body: JSON.stringify({ tipo, detalle }),
+          keepalive: true,
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (res.status === 409) {
+          handleSessionBlocked(
+            data.error ||
+              "Este intento se abrió en otra pestaña o dispositivo. La sesión de esta pestaña fue bloqueada."
+          );
+          return;
+        }
+        if (res.status === 401 || res.status === 403) {
+          handleSessionBlocked(
+            data.error || "Tu sesión expiró. Vuelve al panel e ingresa nuevamente."
+          );
+          return;
+        }
+        if (!res.ok || !data.success) {
+          setInfractionMessage(detalle);
+          setRequiresFullscreen(
+            (previous) => previous || isFullscreenStillMissing()
+          );
+          setInfractionError(data.error || "No se pudo registrar la infracción.");
+          setShowInfractionWarning(true);
+          return;
+        }
+
+        setInfractions((prev) =>
+          typeof data.infractions === "number" ? data.infractions : prev + 1
+        );
+        setInfractionError("");
+
+        if (data.autoSubmitted) {
+          setShowInfractionWarning(false);
+          setRequiresFullscreen(false);
+          endingSafeModeRef.current = true;
+          safeModeActiveRef.current = false;
+          await exitFullscreen();
+          await loadAttemptAndQuestion(0);
+          return;
+        }
+
+        setInfractionMessage(detalle);
+        setRequiresFullscreen(
+          (previous) => previous || isFullscreenStillMissing()
+        );
+        setShowInfractionWarning(true);
+      } catch {
+        setInfractionMessage(detalle);
+        setRequiresFullscreen(
+          (previous) => previous || isFullscreenStillMissing()
+        );
+        setInfractionError(
+          "Error de red al registrar la infracción. Se reintentará en el próximo evento."
+        );
+        setShowInfractionWarning(true);
+      } finally {
+        infractionInFlightRef.current = false;
+      }
+    },
+    [
+      attemptId,
+      exitFullscreen,
+      handleSessionBlocked,
+      loadAttemptAndQuestion,
+      safeModeEnabled,
+      sessionError,
+    ]
+  );
+
+  async function enterSafeMode() {
+    if (!attempt) return;
+
+    setEnteringSafeMode(true);
+    setSafeModeError("");
+    setInfractionError("");
+
+    try {
+      if (
+        typeof document === "undefined" ||
+        typeof document.documentElement.requestFullscreen !== "function"
+      ) {
+        throw new Error(
+          "Tu navegador no permite pantalla completa. Usa Chrome, Edge o Firefox en computadora."
+        );
+      }
+
+      // Debe invocarse dentro del clic del usuario para que el navegador lo permita.
+      const fullscreenRequest = document.documentElement.requestFullscreen();
+      await fullscreenRequest;
+
+      const token = await ensureSessionToken(attempt);
+      if (!token) {
+        throw new Error("No se pudo validar la sesión segura del intento.");
+      }
+
+      sessionTokenRef.current = token;
+      endingSafeModeRef.current = false;
+      safeModeActiveRef.current = true;
+      setSafeModeStarted(true);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo activar el modo seguro.";
+      setSafeModeError(message);
+      setSafeModeStarted(false);
+      safeModeActiveRef.current = false;
+
+      if (typeof document !== "undefined" && document.fullscreenElement) {
+        endingSafeModeRef.current = true;
+        await exitFullscreen();
+      }
+    } finally {
+      setEnteringSafeMode(false);
+    }
+  }
+
+  async function reenterFullscreen() {
+    setReenteringFullscreen(true);
+    setInfractionError("");
+
+    try {
+      if (
+        typeof document === "undefined" ||
+        typeof document.documentElement.requestFullscreen !== "function"
+      ) {
+        throw new Error(
+          "Tu navegador no permite pantalla completa. Usa Chrome, Edge o Firefox en computadora."
+        );
+      }
+
+      const fullscreenRequest = document.documentElement.requestFullscreen();
+      await fullscreenRequest;
+
+      setRequiresFullscreen(false);
+      setShowInfractionWarning(false);
+      setInfractionMessage("");
+    } catch (error) {
+      setInfractionError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo volver a pantalla completa. Inténtalo de nuevo."
+      );
+    } finally {
+      setReenteringFullscreen(false);
+    }
+  }
+
+  useEffect(() => {
+    try {
+      const token = sessionStorage.getItem(`attempt_token_${attemptId}`);
+      if (token) sessionTokenRef.current = token;
+    } catch {
+      // sessionStorage puede estar bloqueado; el gate de modo seguro mostrará el error.
+    }
+  }, [attemptId]);
+
+  // Evita cerrar o recargar accidentalmente durante el modo seguro.
+  useEffect(() => {
+    if (!safeModeStarted) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [safeModeStarted]);
 
   useEffect(() => {
     loadAttemptAndQuestion(0);
@@ -204,6 +549,157 @@ function PresentarQuizContent({
 
     return () => clearInterval(interval);
   }, [attempt?.expiresAt, handleAutoSubmitDueToExpiration]);
+
+  // Detecta cambios de pestaña/ventana y salidas de pantalla completa.
+  useEffect(() => {
+    if (!safeModeEnabled || !safeModeStarted || attempt?.status !== "EN_CURSO") return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        void reportInfraction(
+          "CAMBIO_PESTANA",
+          "El estudiante cambió de pestaña o minimizó la ventana."
+        );
+      }
+    };
+
+    const handleWindowBlur = () => {
+      // visibilitychange ya cubre el cambio de pestaña; blur cubre cambios de ventana.
+      if (!document.hidden) {
+        void reportInfraction(
+          "CAMBIO_VENTANA",
+          "El estudiante cambió de ventana o perdió el foco de la evaluación."
+        );
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      if (document.fullscreenElement || endingSafeModeRef.current) return;
+
+      // Bloquea la interacción de inmediato; el conteo se confirma con la API.
+      setInfractionMessage("El estudiante salió de la pantalla completa.");
+      setRequiresFullscreen(true);
+      setShowInfractionWarning(true);
+      void reportInfraction(
+        "SALIDA_PANTALLA_COMPLETA",
+        "El estudiante salió de la pantalla completa."
+      );
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [attempt?.status, reportInfraction, safeModeEnabled, safeModeStarted]);
+
+  // Heartbeat: mantiene viva la sesión y detecta si otro dispositivo la reemplazó.
+  useEffect(() => {
+    if (
+      !safeModeEnabled ||
+      !safeModeStarted ||
+      Boolean(sessionError) ||
+      attempt?.status !== "EN_CURSO"
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const sendHeartbeat = async () => {
+      if (cancelled || heartbeatInFlightRef.current) return;
+
+      let token = sessionTokenRef.current;
+      if (!token) {
+        try {
+          token = sessionStorage.getItem(`attempt_token_${attemptId}`);
+        } catch {
+          token = null;
+        }
+      }
+      if (!token) return;
+      sessionTokenRef.current = token;
+
+      heartbeatInFlightRef.current = true;
+      try {
+        const res = await fetch(`/api/estudiante/intentos/${attemptId}/heartbeat`, {
+          method: "POST",
+          headers: { "x-attempt-session": token },
+          cache: "no-store",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+
+        if (res.status === 409) {
+          handleSessionBlocked(
+            data.error ||
+              "Este intento se abrió en otra pestaña o dispositivo. La sesión de esta pestaña fue bloqueada."
+          );
+          return;
+        }
+        if (res.status === 401 || res.status === 403) {
+          handleSessionBlocked(
+            data.error || "Tu sesión expiró. Vuelve al panel e ingresa nuevamente."
+          );
+          return;
+        }
+        if (data.status && data.status !== "EN_CURSO") {
+          await loadAttemptAndQuestion(0);
+        }
+      } catch {
+        // Sin conexión: el siguiente latido reintenta.
+      } finally {
+        heartbeatInFlightRef.current = false;
+      }
+    };
+
+    void sendHeartbeat();
+    const interval = setInterval(() => {
+      void sendHeartbeat();
+    }, 20000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [
+    attempt?.status,
+    attemptId,
+    handleSessionBlocked,
+    loadAttemptAndQuestion,
+    safeModeEnabled,
+    safeModeStarted,
+    sessionError,
+  ]);
+
+  // Salir de pantalla completa al abandonar la página.
+  useEffect(() => {
+    return () => {
+      endingSafeModeRef.current = true;
+      if (typeof document !== "undefined" && document.fullscreenElement) {
+        void document.exitFullscreen().catch(() => {});
+      }
+    };
+  }, []);
+
+  // Si el intento termina, no debe quedar la pantalla completa abierta.
+  useEffect(() => {
+    if (!resultsData && (!attempt || attempt.status === "EN_CURSO")) return;
+
+    endingSafeModeRef.current = true;
+    safeModeActiveRef.current = false;
+    setSafeModeStarted(false);
+    setShowInfractionWarning(false);
+    setRequiresFullscreen(false);
+
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+    }
+  }, [attempt, resultsData]);
 
   const triggerSave = useCallback(
     (newRespuestaJson: string | null, newRespuestaTexto: string | null) => {
@@ -241,7 +737,8 @@ function PresentarQuizContent({
     [attemptId, question]
   );
 
-  function handleOptionChange(optionId: string, isMulti: boolean) {
+  function handleOptionChange(optionId: string) {
+    const isMulti = Boolean(question?.multiple);
     let updated: string[];
     if (isMulti) {
       if (selectedOptions.includes(optionId)) {
@@ -300,16 +797,22 @@ function PresentarQuizContent({
   }
 
   async function handleFinalSubmit() {
-    if (!confirm("¿Estás seguro de enviar tu intento? No podrás realizar más cambios.")) {
-      return;
-    }
+    if (submittingRef.current) return;
+
+    submittingRef.current = true;
     setSubmitting(true);
+
     try {
       const res = await fetch(`/api/estudiante/intentos/${attemptId}/enviar`, {
         method: "POST",
       });
       const data = await res.json();
       if (data.success) {
+        endingSafeModeRef.current = true;
+        safeModeActiveRef.current = false;
+        setShowInfractionWarning(false);
+        setRequiresFullscreen(false);
+        await exitFullscreen();
         setResultsData(data);
         setShowConfetti(true);
       } else {
@@ -318,10 +821,86 @@ function PresentarQuizContent({
     } catch {
       alert("Error de red al enviar");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
       setShowConfirmSubmit(false);
     }
   }
+
+  const safeModeWarning = (
+    <Modal
+      isOpen={showInfractionWarning}
+      onClose={() => {
+        if (!requiresFullscreen) {
+          setShowInfractionWarning(false);
+          setInfractionError("");
+        }
+      }}
+      title="Infracción de modo seguro"
+      size="md"
+      closeOnOverlayClick={!requiresFullscreen}
+    >
+      <div className="space-y-4">
+        <div className="p-4 rounded-xl bg-danger-soft border border-danger/25 text-danger-text flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">Se registró una infracción</p>
+            <p className="text-sm mt-1">
+              {infractionMessage || "Se detectó una acción no permitida durante la evaluación."}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-text-muted text-sm">
+          Infracciones registradas:{" "}
+          <strong className="text-text">
+            {infractions} de {maxInfracciones}
+          </strong>
+          .{" "}
+          {infractions < maxInfracciones
+            ? `Al llegar a ${maxInfracciones}, tu intento se enviará automáticamente.`
+            : "Tu intento será enviado automáticamente."}
+        </p>
+
+        {requiresFullscreen && (
+          <div className="p-4 rounded-xl bg-warning-soft border border-warning/25 text-warning-text text-sm flex items-start gap-3">
+            <Maximize2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>
+              Debes volver a pantalla completa para continuar con la evaluación. Si intentas
+              salir de nuevo, se registrará otra infracción.
+            </span>
+          </div>
+        )}
+
+        {infractionError && (
+          <p className="text-sm text-danger-text">{infractionError}</p>
+        )}
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          {requiresFullscreen ? (
+            <Button
+              variant="primary"
+              isLoading={reenteringFullscreen}
+              leftIcon={<Maximize2 className="w-4 h-4" />}
+              onClick={reenterFullscreen}
+            >
+              Volver a pantalla completa
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              onClick={() => {
+                setShowInfractionWarning(false);
+                setInfractionError("");
+              }}
+            >
+              Entendido
+            </Button>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
 
   // ========================
   // VIEW: LOADING
@@ -337,6 +916,98 @@ function PresentarQuizContent({
               <div className="h-full bg-gradient-to-r from-primary to-accent-teal rounded-full animate-[pulse_1.5s_ease-in-out_infinite]" style={{ width: '60%' }} />
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ========================
+  // VIEW: SESSION BLOCKED
+  // ========================
+  if (sessionError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+        <ThemeToggle className="absolute top-4 right-4 z-20" />
+        <div className="max-w-lg w-full bg-card rounded-3xl shadow-2xl border border-border p-8 text-center space-y-6">
+          <div className="mx-auto w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center">
+            <ShieldAlert className="w-8 h-8 text-danger-text" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-heading font-bold text-text">Sesión bloqueada</h1>
+            <p className="mt-2 text-text-muted">{sessionError}</p>
+          </div>
+          <Link href="/estudiante" className="block">
+            <Button variant="primary" size="lg" className="w-full">
+              Volver al Panel
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ========================
+  // VIEW: SAFE MODE GATE
+  // ========================
+  if (!resultsData && safeModeEnabled && attempt?.status === "EN_CURSO" && !safeModeStarted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+        <ThemeToggle className="absolute top-4 right-4 z-20" />
+        <div className="max-w-xl w-full bg-card rounded-3xl shadow-2xl border border-border p-8 text-center space-y-6">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <ShieldCheck className="w-8 h-8 text-primary-text" />
+          </div>
+
+          <div>
+            <h1 className="text-2xl font-heading font-bold text-text">Modo seguro activado</h1>
+            <p className="mt-2 text-text-muted">
+              Para comenzar esta evaluación debes activar la pantalla completa.
+            </p>
+          </div>
+
+          <div className="text-left p-4 rounded-2xl bg-warning-soft border border-warning/25 text-warning-text flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <ul className="text-sm space-y-1 list-disc pl-4">
+              <li>La evaluación se abrirá en pantalla completa.</li>
+              <li>Cambiar de pestaña o ventana cuenta como infracción.</li>
+              <li>Salir de pantalla completa cuenta como infracción.</li>
+              <li>
+                Al llegar a {maxInfracciones} infracciones, el intento se enviará automáticamente.
+              </li>
+            </ul>
+          </div>
+
+          {infractions > 0 && (
+            <p className="text-sm text-text-muted">
+              Infracciones registradas:{" "}
+              <strong className="text-text">
+                {infractions} de {maxInfracciones}
+              </strong>
+            </p>
+          )}
+
+          {safeModeError && (
+            <div className="p-4 rounded-2xl bg-danger-soft border border-danger/25 text-danger-text text-sm text-left flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span>{safeModeError}</span>
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full"
+            isLoading={enteringSafeMode}
+            leftIcon={<Maximize2 className="w-5 h-5" />}
+            onClick={enterSafeMode}
+          >
+            {enteringSafeMode ? "Activando..." : "Activar pantalla completa y comenzar"}
+          </Button>
+
+          <p className="text-xs text-text-muted">
+            El tiempo del intento ya está corriendo. No cierres esta ventana ni cambies de
+            pestaña.
+          </p>
         </div>
       </div>
     );
@@ -375,6 +1046,7 @@ function PresentarQuizContent({
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+        <ThemeToggle className="absolute top-4 right-4 z-20" />
         <Confetti active={showConfetti} />
 
         <div className="max-w-2xl w-full">
@@ -394,7 +1066,7 @@ function PresentarQuizContent({
             {/* XP Badge */}
             <div className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 rounded-full">
               <span className="text-2xl">⭐</span>
-              <span className="font-bold text-xl text-primary">+{xp} XP</span>
+              <span className="font-bold text-xl text-primary-text">+{xp} XP</span>
             </div>
 
             {/* Score */}
@@ -405,7 +1077,7 @@ function PresentarQuizContent({
                     Calificación Obtenida
                   </span>
                   <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-5xl font-heading font-extrabold text-primary">
+                    <span className="text-5xl font-heading font-extrabold text-primary-text">
                       {finalScore}
                     </span>
                     <span className="text-2xl text-text-muted">
@@ -466,7 +1138,8 @@ function PresentarQuizContent({
   // ========================
   if (showConfirmSubmit) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+        <ThemeToggle className="absolute top-4 right-4 z-20" />
         <Modal
           isOpen={true}
           onClose={() => setShowConfirmSubmit(false)}
@@ -478,7 +1151,7 @@ function PresentarQuizContent({
               Estás a punto de finalizar tu intento. Una vez enviado, no podrás modificar tus respuestas.
             </p>
 
-            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl flex items-center gap-3">
+            <div className="p-4 bg-warning-soft border border-warning/25 text-warning-text rounded-xl flex items-center gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span>Asegúrate de haber respondido todas las preguntas antes de confirmar.</span>
             </div>
@@ -501,6 +1174,7 @@ function PresentarQuizContent({
             </div>
           </div>
         </Modal>
+        {safeModeWarning}
       </div>
     );
   }
@@ -510,16 +1184,16 @@ function PresentarQuizContent({
   // ========================
   if (!question || !attempt) return null;
 
-  const isMultiChoice = question.tipo === "MULTICHOICE" && question.options.length > 2;
+  const isMultiChoice = Boolean(question.multiple);
 
   // Colores para opciones
   const optionColors = [
     "bg-primary/10 hover:bg-primary/20 border-primary/30",
     "bg-accent-teal/10 hover:bg-accent-teal/20 border-accent-teal/30",
     "bg-accent-pink/10 hover:bg-accent-pink/20 border-accent-pink/30",
-    "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30",
-    "bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-500/30",
-    "bg-green-500/10 hover:bg-green-500/20 border-green-500/30",
+    "bg-warning/10 hover:bg-warning/20 border-warning/30",
+    "bg-info/10 hover:bg-info/20 border-info/30",
+    "bg-success/10 hover:bg-success/20 border-success/30",
   ];
 
   return (
@@ -529,14 +1203,24 @@ function PresentarQuizContent({
 
       {/* Top Bar */}
       <div className="border-b border-border bg-card/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-2">
-        {/* Left: Quiz title */}
-        <Link
-          href="/estudiante"
-          className="flex items-center gap-2 text-text-muted hover:text-text transition"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden md:inline text-sm">Volver al Panel</span>
-        </Link>
+        {/* Left: safe mode indicator / back link */}
+        {safeModeEnabled && safeModeStarted ? (
+          <div
+            className="flex items-center gap-2 text-primary-text"
+            title="El modo seguro está activo"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span className="hidden md:inline text-sm font-medium">Modo seguro</span>
+          </div>
+        ) : (
+          <Link
+            href="/estudiante"
+            className="flex items-center gap-2 text-text-muted hover:text-text transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden md:inline text-sm">Volver al Panel</span>
+          </Link>
+        )}
 
         {/* Center: Quiz title */}
         <div className="flex-1 text-center">
@@ -545,12 +1229,13 @@ function PresentarQuizContent({
           </h1>
         </div>
 
-        {/* Right: Timer + XP */}
+        {/* Right: Theme, Timer + XP */}
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           {/* XP */}
           <div className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 rounded-full">
             <span className="text-lg">⭐</span>
-            <span className="font-bold text-primary">{xp} XP</span>
+            <span className="font-bold text-primary-text">{xp} XP</span>
           </div>
 
           {/* Timer */}
@@ -558,10 +1243,10 @@ function PresentarQuizContent({
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-lg transition-colors ${
                 timeLeft <= 30
-                  ? "bg-red-500/10 text-red-600 animate-pulse"
+                  ? "bg-danger/10 text-danger-text animate-pulse"
                   : timeLeft <= 60
-                  ? "bg-amber-500/10 text-amber-600"
-                  : "bg-primary/10 text-primary"
+                  ? "bg-warning/10 text-warning-text"
+                  : "bg-primary/10 text-primary-text"
               }`}
             >
               <Timer className="w-5 h-5" />
@@ -579,9 +1264,22 @@ function PresentarQuizContent({
           <span>
             Pregunta {currentIndex + 1} de {totalQuestions}
           </span>
-          <Badge variant="info">
-            {question.tipo} • {question.defaultGrade} pt{question.defaultGrade !== 1 ? "s" : ""}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {safeModeEnabled && (
+              <Badge
+                variant={infractions > 0 ? "danger" : "secondary"}
+                title={`Infracciones: ${infractions} de ${maxInfracciones}`}
+              >
+                <ShieldCheck className="w-3 h-3" />
+                <span className="ml-1">
+                  {infractions}/{maxInfracciones}
+                </span>
+              </Badge>
+            )}
+            <Badge variant="info">
+              {question.tipo} • {question.defaultGrade} pt{question.defaultGrade !== 1 ? "s" : ""}
+            </Badge>
+          </div>
         </div>
         <ProgressBar
           value={currentIndex + 1}
@@ -600,7 +1298,7 @@ function PresentarQuizContent({
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <span className="font-heading font-bold text-primary text-lg">
+                  <span className="font-heading font-bold text-primary-text text-lg">
                     {currentIndex + 1}
                   </span>
                 </div>
@@ -642,8 +1340,8 @@ function PresentarQuizContent({
                           type={isMultiChoice ? "checkbox" : "radio"}
                           name={`question-${question.id}`}
                           checked={checked}
-                          onChange={() => handleOptionChange(opt.id, isMultiChoice)}
-                          className="text-primary focus:ring-primary w-5 h-5"
+                          onChange={() => handleOptionChange(opt.id)}
+                          className="text-primary-text focus:ring-primary w-5 h-5"
                         />
                         <div
                           className="text-text flex-1"
@@ -651,7 +1349,7 @@ function PresentarQuizContent({
                         />
                         {checked && (
                           <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center animate-bounce">
-                            <CheckCircle className="w-4 h-4 text-white" />
+                            <CheckCircle className="w-4 h-4 text-primary-foreground" />
                           </div>
                         )}
                       </label>
@@ -737,11 +1435,11 @@ function PresentarQuizContent({
             {/* Saving status indicator */}
             {savingStatus && (
               <div className="mt-6 flex items-center gap-2 text-xs text-text-muted animate-fade-up">
-                {savingStatus === "guardado" && <CheckCircle className="w-4 h-4 text-green-500" />}
+                {savingStatus === "guardado" && <CheckCircle className="w-4 h-4 text-success" />}
                 {savingStatus === "guardando" && (
                   <div className="w-3 h-3 border border-text-muted border-t-transparent rounded-full animate-spin" />
                 )}
-                {savingStatus === "error" && <XCircle className="w-4 h-4 text-red-500" />}
+                {savingStatus === "error" && <XCircle className="w-4 h-4 text-danger" />}
                 <span>
                   {savingStatus === "guardado"
                     ? "Respuesta guardada ✓"
@@ -788,9 +1486,9 @@ function PresentarQuizContent({
                       onClick={() => goToQuestion(idx)}
                       className={`w-8 h-8 rounded-xl text-xs font-bold transition-all ${
                         isCurrent
-                          ? "bg-primary text-white shadow-lg scale-110"
+                          ? "bg-primary text-primary-foreground shadow-lg scale-110"
                           : hasAnswer
-                          ? "bg-green-500/10 text-green-600 border border-green-200"
+                          ? "bg-success-soft text-success-text border border-success/30"
                           : "bg-surface-alt text-text-muted hover:bg-surface-alt/80"
                       }`}
                     />
@@ -856,6 +1554,8 @@ function PresentarQuizContent({
           </div>
         </div>
       </Modal>
+
+      {safeModeWarning}
     </div>
   );
 }

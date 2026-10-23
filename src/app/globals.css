@@ -1,43 +1,103 @@
 ﻿@import "tailwindcss";
 
+/* El tema se controla con la clase .dark en <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  /* Wayground-inspired palette */
-  --color-primary: 130 82% 58%;     /* morado vibrante #7B4FE0 HSL-ish fallback */
-  --color-primary-dark: 128 61% 47%;
-  --color-accent-teal: 180 100% 45%;
-  --color-accent-orange: 25 95% 55%;
-  --color-accent-pink: 330 95% 58%;
-  --color-accent-yellow: 45 95% 60%;
-  --color-background: 0 0% 100%;
-  --color-surface: 0 0% 99.5%;
-  --color-surface-alt: 240 20% 97%;
+  color-scheme: light;
+
+  /* Marca */
+  --color-primary: 258 72% 59%; /* #7B4FE0 */
+  --color-primary-dark: 258 65% 46%;
+  --color-primary-foreground: 0 0% 100%;
+  --color-primary-text: 258 65% 46%;
+  --color-primary-soft: 258 100% 97%;
+  --color-accent-teal: 174 58% 45%;
+  --color-accent-orange: 38 92% 50%;
+  --color-accent-pink: 330 81% 60%;
+  --color-accent-yellow: 45 93% 58%;
+
+  /* Superficies y texto */
+  --color-background: 240 33% 98%;
+  --color-surface: 0 0% 100%;
+  --color-surface-alt: 240 24% 96%;
   --color-card: 0 0% 100%;
   --color-border: 240 20% 90%;
-  --color-border-strong: 240 20% 82%;
-  --color-text: 240 10% 15%;
-  --color-text-muted: 240 10% 45%;
-  --color-text-soft: 240 6% 60%;
+  --color-border-strong: 240 16% 80%;
+  --color-text: 231 22% 16%;
+  --color-text-muted: 230 12% 42%;
+  --color-text-soft: 230 10% 55%;
+
+  /* Estados */
+  --color-success: 152 65% 32%;
+  --color-success-foreground: 0 0% 100%;
+  --color-success-text: 152 70% 26%;
+  --color-success-soft: 152 70% 94%;
+  --color-warning: 38 92% 50%;
+  --color-warning-foreground: 32 80% 12%;
+  --color-warning-text: 32 80% 30%;
+  --color-warning-soft: 45 95% 92%;
+  --color-danger: 0 72% 45%;
+  --color-danger-foreground: 0 0% 100%;
+  --color-danger-text: 0 70% 38%;
+  --color-danger-soft: 0 86% 96%;
+  --color-info: 217 75% 45%;
+  --color-info-foreground: 0 0% 100%;
+  --color-info-text: 217 70% 38%;
+  --color-info-soft: 214 95% 95%;
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: 240 20% 6%;
-    --color-surface: 240 20% 9%;
-    --color-surface-alt: 240 20% 14%;
-    --color-card: 240 20% 13%;
-    --color-border: 240 20% 22%;
-    --color-border-strong: 240 20% 28%;
-    --color-text: 0 0% 92%;
-    --color-text-muted: 240 10% 65%;
-    --color-text-soft: 240 8% 72%;
-  }
+.dark {
+  color-scheme: dark;
+
+  /* Marca */
+  --color-primary: 258 72% 59%;
+  --color-primary-dark: 258 65% 46%;
+  --color-primary-foreground: 0 0% 100%;
+  --color-primary-text: 258 90% 78%;
+  --color-primary-soft: 258 40% 20%;
+  --color-accent-teal: 174 65% 52%;
+  --color-accent-orange: 38 95% 58%;
+  --color-accent-pink: 330 85% 68%;
+  --color-accent-yellow: 45 95% 63%;
+
+  /* Superficies y texto */
+  --color-background: 232 30% 8%;
+  --color-surface: 232 28% 10%;
+  --color-surface-alt: 232 25% 15%;
+  --color-card: 232 26% 13%;
+  --color-border: 232 20% 22%;
+  --color-border-strong: 232 18% 30%;
+  --color-text: 230 33% 96%;
+  --color-text-muted: 230 15% 70%;
+  --color-text-soft: 230 12% 58%;
+
+  /* Estados */
+  --color-success: 152 55% 48%;
+  --color-success-foreground: 152 80% 8%;
+  --color-success-text: 152 70% 78%;
+  --color-success-soft: 152 45% 14%;
+  --color-warning: 42 92% 58%;
+  --color-warning-foreground: 38 80% 8%;
+  --color-warning-text: 45 95% 80%;
+  --color-warning-soft: 38 50% 15%;
+  --color-danger: 0 72% 60%;
+  --color-danger-foreground: 0 70% 8%;
+  --color-danger-text: 0 90% 80%;
+  --color-danger-soft: 0 50% 16%;
+  --color-info: 217 80% 65%;
+  --color-info-foreground: 217 80% 8%;
+  --color-info-text: 214 95% 82%;
+  --color-info-soft: 217 45% 16%;
 }
 
 /* Tailwind theme tokens (v4) */
 @theme inline {
   --color-primary: hsl(var(--color-primary));
   --color-primary-dark: hsl(var(--color-primary-dark));
+  --color-primary-foreground: hsl(var(--color-primary-foreground));
+  --color-primary-text: hsl(var(--color-primary-text));
+  --color-primary-soft: hsl(var(--color-primary-soft));
   --color-accent-teal: hsl(var(--color-accent-teal));
   --color-accent-orange: hsl(var(--color-accent-orange));
   --color-accent-pink: hsl(var(--color-accent-pink));
@@ -51,6 +111,22 @@
   --color-text: hsl(var(--color-text));
   --color-text-muted: hsl(var(--color-text-muted));
   --color-text-soft: hsl(var(--color-text-soft));
+  --color-success: hsl(var(--color-success));
+  --color-success-foreground: hsl(var(--color-success-foreground));
+  --color-success-text: hsl(var(--color-success-text));
+  --color-success-soft: hsl(var(--color-success-soft));
+  --color-warning: hsl(var(--color-warning));
+  --color-warning-foreground: hsl(var(--color-warning-foreground));
+  --color-warning-text: hsl(var(--color-warning-text));
+  --color-warning-soft: hsl(var(--color-warning-soft));
+  --color-danger: hsl(var(--color-danger));
+  --color-danger-foreground: hsl(var(--color-danger-foreground));
+  --color-danger-text: hsl(var(--color-danger-text));
+  --color-danger-soft: hsl(var(--color-danger-soft));
+  --color-info: hsl(var(--color-info));
+  --color-info-foreground: hsl(var(--color-info-foreground));
+  --color-info-text: hsl(var(--color-info-text));
+  --color-info-soft: hsl(var(--color-info-soft));
   --font-heading: "Baloo 2", var(--font-geist-sans), system-ui;
   --font-body: "Nunito", var(--font-geist-sans), system-ui;
   --radius-xl: 20px;
@@ -113,12 +189,13 @@
 /* Global base */
 html {
   scroll-behavior: smooth;
+  background: hsl(var(--color-background));
 }
 
 @layer base {
   body {
-    background: var(--color-background);
-    color: var(--color-text);
+    background: hsl(var(--color-background));
+    color: hsl(var(--color-text));
     font-family: var(--font-body);
     @apply antialiased;
   }
@@ -129,9 +206,12 @@ html {
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--color-surface-alt); }
-::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-border-strong); }
+::-webkit-scrollbar-track { background: hsl(var(--color-surface-alt)); }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--color-border));
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--color-border-strong)); }
 
 /* Utility classes */
 .secure-quiz-container {
@@ -142,11 +222,20 @@ html {
 }
 
 .bg-wayground-gradient {
-  background: linear-gradient(135deg, #7B4FE0 0%, #38B2AC 50%, #F59E0B 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--color-primary)) 0%,
+    hsl(var(--color-accent-teal)) 50%,
+    hsl(var(--color-accent-orange)) 100%
+  );
 }
 
 .bg-soft-purple {
-  background: radial-gradient(circle at top right, #f3e8ff 0%, transparent 60%);
+  background: radial-gradient(
+    circle at top right,
+    hsl(var(--color-primary) / 0.12) 0%,
+    transparent 60%
+  );
 }
 
 /* Confetti base */

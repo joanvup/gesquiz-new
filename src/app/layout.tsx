@@ -1,6 +1,9 @@
 ﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Baloo_2, Nunito } from "next/font/google";
+import Script from "next/script";
+import { ThemeProvider } from "@/components";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,10 +40,17 @@ export default function RootLayout({
   return (
     <html
       lang="es"
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${baloo2.variable} ${nunito.variable} h-full antialiased`}
     >
-      <body className="min-h-screen flex flex-col bg-surface text-text font-body overflow-x-hidden">
-        {children}
+      <body className="min-h-screen flex flex-col bg-background text-text font-body overflow-x-hidden">
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
+        />
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

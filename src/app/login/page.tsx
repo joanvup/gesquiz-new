@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mascot, Button } from "@/components";
+import { Mascot, Button, ThemeToggle } from "@/components";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 
 export default function LoginPage() {
@@ -15,6 +15,8 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // e.currentTarget deja de ser válido después del primer await
+    const form = e.currentTarget as HTMLFormElement;
     setError("");
     setLoading(true);
 
@@ -32,7 +34,9 @@ export default function LoginPage() {
 
       // Feedback animado
       setTimeout(() => {
-        if (data.user.role === "TEACHER" || data.user.role === "ADMIN") {
+        if (data.user.role === "ADMIN") {
+          router.push("/admin");
+        } else if (data.user.role === "TEACHER") {
           router.push("/docente");
         } else {
           router.push("/estudiante");
@@ -42,7 +46,6 @@ export default function LoginPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error desconocido");
       // Animación de error
-      const form = e.currentTarget as HTMLElement;
       form.classList.add("animate-shake");
       setTimeout(() => form.classList.remove("animate-shake"), 600);
     } finally {
@@ -52,6 +55,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface relative overflow-hidden">
+      <ThemeToggle className="absolute top-4 right-4 z-20" />
       {/* Fondos decorativos */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 translate-y-1/3 w-80 h-80 bg-accent-teal/5 rounded-full blur-3xl" />
@@ -61,19 +65,12 @@ export default function LoginPage() {
           {/* Hero */}
           <div className="text-center md:text-left space-y-6">
             <Mascot expression="wave" size="lg" />
-            <h1 className="text-4xl font-heading font-bold text-primary">
+            <h1 className="text-4xl font-heading font-bold text-primary-text">
               ¡Bienvenido a QuizColegio!
             </h1>
             <p className="text-text-muted">
               Ingresa con tu cuenta para acceder a tus quizzes y comenzar a aprender.
             </p>
-            <div className="flex gap-2 text-sm text-text-muted">
-              <span>Tip:</span>
-              <kbd className="px-2 py-1 bg-surface-alt rounded">Ctrl</kbd>
-              <span>+</span>
-              <kbd className="px-2 py-1 bg-surface-alt rounded">Enter</kbd>
-              <span> para activar modo oscuro 🎨</span>
-            </div>
           </div>
 
           {/* Formulario */}
@@ -84,7 +81,7 @@ export default function LoginPage() {
               </h2>
 
               {error && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3">
+                <div className="mb-4 p-4 bg-danger-soft border border-danger/25 text-danger-text rounded-xl flex items-center gap-3">
                   <span className="text-xl">⚠️</span>
                   {error}
                 </div>

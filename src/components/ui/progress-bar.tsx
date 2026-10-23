@@ -16,10 +16,10 @@ interface ProgressBarProps {
 
 const colorClasses: Record<NonNullable<ProgressBarProps["color"]>, string> = {
   primary: "bg-primary",
-  teal: "bg-teal-500",
-  green: "bg-green-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
+  teal: "bg-accent-teal",
+  green: "bg-success",
+  amber: "bg-warning",
+  red: "bg-danger",
   gradient: "bg-gradient-to-r from-primary to-accent-teal",
 };
 
@@ -61,6 +61,8 @@ export function ProgressBar({
 
       return () => clearInterval(timer);
     } else {
+      // Sincroniza el valor mostrado cuando no hay animación.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayValue(pct);
       prevPctRef.current = pct;
     }

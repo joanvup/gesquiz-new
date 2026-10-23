@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mascot, Badge, Button, EmptyState } from '@/components';
+import { Mascot, Badge, Button, EmptyState, ThemeToggle } from '@/components';
 import { Plus, Edit3, Upload, Share2, Eye, BarChart3, Trash2, LogOut } from 'lucide-react';
 
 interface QuizItem {
@@ -74,9 +74,10 @@ export default function DocenteDashboard() {
           </div>
         </div>
         <div className='flex gap-3'>
+          <ThemeToggle />
           <Link
             href='/docente/quizzes/nuevo'
-            className='px-4 py-2 bg-primary text-white rounded-2xl font-heading font-bold hover:brightness-110 transition flex items-center gap-2'
+            className='px-4 py-2 bg-primary text-primary-foreground rounded-2xl font-heading font-bold hover:brightness-110 transition flex items-center gap-2'
           >
             <Plus className='w-4 h-4' />
             Crear Nuevo Quiz
@@ -89,7 +90,7 @@ export default function DocenteDashboard() {
       </div>
 
       {error && (
-        <div className='mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3'>
+        <div className='mb-6 p-4 bg-danger-soft border border-danger/25 text-danger-text rounded-xl flex items-center gap-3'>
           ⚠️ {error}
         </div>
       )}
@@ -105,7 +106,7 @@ export default function DocenteDashboard() {
         <EmptyState
           title="No hay quizzes creados"
           description="Comienza creando tu primer cuestionario."
-          emoji="📝"
+          emoji="📚"
           action={{
             label: "Crear Primer Quiz",
             onClick: () => router.push('/docente/quizzes/nuevo'),
@@ -148,37 +149,37 @@ export default function DocenteDashboard() {
               <div className='border-t border-border pt-4 grid grid-cols-2 gap-2 text-xs font-medium'>
                 <Link
                   href={'/docente/quizzes/' + q.id + '/editar'}
-                  className='px-3 py-2 bg-surface-alt hover:bg-primary/5 text-text rounded-xl flex items-center gap-1 transition'
+                  className='px-3 py-2 bg-surface-alt hover:bg-primary-soft text-text rounded-xl flex items-center gap-1 transition'
                 >
                   <Edit3 className='w-3 h-3' /> Configurar
                 </Link>
                 <Link
                   href={'/docente/quizzes/' + q.id + '/importar'}
-                  className='px-3 py-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl flex items-center gap-1 transition'
+                  className='px-3 py-2 bg-primary-soft hover:bg-primary-soft/80 text-primary-text rounded-xl flex items-center gap-1 transition'
                 >
                   <Upload className='w-3 h-3' /> Importar XML
                 </Link>
                 <Link
                   href={'/docente/quizzes/' + q.id + '/asignar'}
-                  className='px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl flex items-center gap-1 transition'
+                  className='px-3 py-2 bg-primary-soft hover:bg-primary-soft/80 text-primary-text rounded-xl flex items-center gap-1 transition'
                 >
                   <Share2 className='w-3 h-3' /> Asignar
                 </Link>
                 <Link
                   href={'/docente/quizzes/' + q.id + '/preview'}
-                  className='px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center gap-1 transition'
+                  className='px-3 py-2 bg-success-soft hover:bg-success-soft/80 text-success-text rounded-xl flex items-center justify-center gap-1 transition'
                 >
                   <Eye className='w-3 h-3' /> Preview
                 </Link>
                 <Link
                   href={'/docente/quizzes/' + q.id + '/resultados'}
-                  className='col-span-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center gap-1 transition'
+                  className='col-span-2 px-3 py-2 bg-info-soft hover:bg-info-soft/80 text-info-text rounded-xl flex items-center justify-center gap-1 transition'
                 >
                   <BarChart3 className='w-3 h-3' /> Resultados de Estudiantes
                 </Link>
                 <button
                   onClick={() => handleDelete(q.id)}
-                  className='px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl flex items-center justify-center gap-1 transition'
+                  className='px-3 py-2 bg-danger-soft hover:bg-danger-soft/80 text-danger-text rounded-xl flex items-center justify-center gap-1 transition'
                 >
                   <Trash2 className='w-3 h-3' /> Eliminar
                 </button>

@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import { Suspense } from 'react';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { Mascot, Button, StatusBadge, EmptyState } from '@/components';
+import { Mascot, Button, StatusBadge, EmptyState, ThemeToggle } from '@/components';
 import { ChevronRight, Download, Trophy, AlertCircle, Eye } from 'lucide-react';
 
 interface AttemptItem {
@@ -66,10 +66,10 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
   if (error || !quiz) {
     return (
       <div className="flex-1 p-8 max-w-4xl mx-auto w-full">
-        <div className="p-4 bg-red-50 text-red-700 rounded-xl mb-4 flex items-center gap-2">
+        <div className="p-4 bg-danger-soft text-danger-text rounded-xl mb-4 flex items-center gap-2">
           <AlertCircle className="w-4 h-4" /> {error || 'No encontrado'}
         </div>
-        <Link href='/docente' className='text-primary underline text-sm flex items-center w-max gap-1'>
+        <Link href='/docente' className='text-primary-text underline text-sm flex items-center w-max gap-1'>
           ← Volver al panel
         </Link>
       </div>
@@ -81,26 +81,28 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
       {/* Header */}
       <div className='mb-6 flex items-center justify-between'>
         <div className='flex items-center gap-2 text-sm text-text-muted'>
-          <Link href='/docente' className='hover:text-primary transition'>Panel</Link>
+          <Link href='/docente' className='hover:text-primary-text transition'>Panel</Link>
           <ChevronRight className="w-4 h-4" />
           <span className="text-text">Resultados</span>
         </div>
-        <Link href='#'>
-          <Button
-            variant="success"
-            size="md"
-            leftIcon={<Download className="w-4 h-4" />}
-            as="a"
-          >
-            Exportar a CSV
-          </Button>
-        </Link>
+        <div className='flex items-center gap-2'>
+          <ThemeToggle />
+          <Link href='#'>
+            <Button
+              variant="success"
+              size="md"
+              leftIcon={<Download className="w-4 h-4" />}
+            >
+              Exportar a CSV
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className='bg-card rounded-3xl shadow-lg border border-border p-6 md:p-8 mb-8'>
         <h1 className='text-2xl font-heading font-bold text-text mb-2'>{quiz.titulo}</h1>
         <p className='text-text-muted text-sm flex items-center gap-2'>
-          <Trophy className="w-4 h-4 text-amber-400" />
+          <Trophy className="w-4 h-4 text-warning-text" />
           <span>Puntaje máximo: {quiz.puntajeMaximo}</span>
           <span>·</span>
           <span>Total Intentos: {quiz.attempts.length}</span>
@@ -158,7 +160,7 @@ function QuizResultadosContent({ params }: { params: Promise<{ id: string }> }) 
                     <td className='p-4 text-right'>
                       <Link
                         href={'/docente/intentos/' + att.id}
-                        className='px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-medium rounded-xl text-xs transition inline-flex items-center gap-1'
+                        className='px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary-text font-medium rounded-xl text-xs transition inline-flex items-center gap-1'
                       >
                         <Eye className="w-3 h-3" /> Ver Detalle
                       </Link>

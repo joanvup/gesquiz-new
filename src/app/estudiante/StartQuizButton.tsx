@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components";
-import { Play, ArrowRight } from "lucide-react";
+import { Play, ArrowRight, RotateCw } from "lucide-react";
 
 interface StartQuizButtonProps {
   quizId: string;
@@ -65,14 +65,19 @@ export function ResumeQuizButton({ quizId, attemptId }: { quizId: string; attemp
   async function handleResume() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/estudiante/intentos/${attemptId}`);
+      // Reanudar rota el token de sesión: la pestaña anterior queda bloqueada.
+      const res = await fetch(`/api/estudiante/quizzes/${quizId}/intentos`, {
+        method: "POST",
+      });
       const data = await res.json();
-      if (data.attempt) {
-        const token = sessionStorage.getItem(`attempt_token_${attemptId}`);
-        if (token) {
-          // Re-use token
+      if (data.success && data.attempt) {
+        const targetAttemptId = data.attempt.id || attemptId;
+        if (data.sessionToken) {
+          sessionStorage.setItem(`attempt_token_${targetAttemptId}`, data.sessionToken);
         }
-        router.push(`/estudiante/quizzes/${quizId}/intentos/${attemptId}/presentar`);
+        router.push(`/estudiante/quizzes/${quizId}/intentos/${targetAttemptId}/presentar`);
+      } else {
+        alert(data.error || "Error al reanudar el intento");
       }
     } catch {
       alert("Error de red");

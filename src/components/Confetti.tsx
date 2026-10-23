@@ -38,6 +38,8 @@ export function Confetti({
 
   useEffect(() => {
     if (!active) {
+      // La limpieza al desactivar es intencional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPieces([]);
       return;
     }
@@ -52,6 +54,7 @@ export function Confetti({
       duration: 2.2 + Math.random() * 1,
     }));
 
+    // Las piezas se generan una vez por activación.
     setPieces(newPieces);
 
     // Limpiar tras la animación
@@ -81,7 +84,7 @@ export function Confetti({
             animationDuration: `${p.duration}s`,
             animationName: "confetti-fall",
             animationTimingFunction: "ease-out",
-            animationFillStyle: "forwards",
+            animationFillMode: "forwards",
           }}
         />
       ))}
