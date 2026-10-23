@@ -5,6 +5,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mascot, Badge, StatusBadge, Button, ThemeToggle } from '@/components';
+import { formatStudentAnswer } from '@/lib/answer-format';
 import { toGradeScale } from '@/lib/grades';
 import {
   RotateCcw,
@@ -62,6 +63,88 @@ interface AttemptDetail {
   quiz: { id: string; titulo: string; puntajeMaximo: number; questions: Question[] };
   answers: AttemptAnswer[];
   events: AuditEvent[];
+}
+
+function AnswerContent({
+  question,
+  answer,
+}: {
+  question: Question;
+  answer?: AttemptAnswer;
+}) {
+  const display = formatStudentAnswer(question, answer);
+
+  if (display.kind === 'empty') {
+    return <span className='text-text-muted italic'>Sin respuesta</span>;
+  }
+
+  if (display.kind === 'text') {
+    return (
+      <p className='text-text whitespace-pre-wrap break-words'>{display.text}</p>
+    );
+  }
+
+  if (display.kind === 'raw') {
+    return (
+      <p className='text-text break-words font-mono text-xs'>{display.text}</p>
+    );
+  }
+
+  if (display.kind === 'matching') {
+    const showCorrect = answer?.esCorrecta === false;
+    return (
+      <ul className='space-y-3'>
+        {display.pairs.map((pair) => (
+          <li key={pair.id} className='text-text'>
+            <div
+              className='font-medium'
+              dangerouslySetInnerHTML={{ __html: pair.leftHtml }}
+            />
+            <div className='mt-1 flex flex-wrap items-center gap-1'>
+              <span className='text-text-muted'>→</span>
+              <span
+                className={
+                  pair.isCorrect ? 'text-success-text' : 'text-danger-text'
+                }
+              >
+                {pair.selected || 'Sin seleccionar'}
+              </span>
+              {showCorrect && !pair.isCorrect && pair.correct && (
+                <span className='text-xs text-success-text'>
+                  · Correcta: {pair.correct}
+                </span>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  const showCorrect = answer?.esCorrecta === false && display.correct.length > 0;
+  return (
+    <div className='space-y-2'>
+      <ul className='list-disc list-inside space-y-1'>
+        {display.selected.map((option) => (
+          <li key={option.id} className='text-text'>
+            <div dangerouslySetInnerHTML={{ __html: option.textoHtml }} />
+          </li>
+        ))}
+      </ul>
+      {showCorrect && (
+        <div className='text-xs text-success-text'>
+          <span className='font-semibold'>Respuesta correcta:</span>
+          <ul className='list-disc list-inside mt-1 space-y-1'>
+            {display.correct.map((option) => (
+              <li key={option.id}>
+                <div dangerouslySetInnerHTML={{ __html: option.textoHtml }} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string }> }) {
@@ -325,11 +408,7 @@ function AttemptDetailContent({ params }: { params: Promise<{ attemptId: string 
                   <span className='font-semibold text-text-muted block mb-1'>
                     Respuesta del estudiante:
                   </span>
-                  <p className='text-text'>
-                    {ans?.respuestaTexto || ans?.respuestaJson || (
-                      <span className='text-text-muted italic'>Sin respuesta</span>
-                    )}
-                  </p>
+                  <AnswerContent question={q} answer={ans} />
                 </div>
 
                 {/* Calificación de ESSAY */}
