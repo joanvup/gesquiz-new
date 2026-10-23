@@ -22,6 +22,15 @@ export async function GET() {
     students.getRow(1).font = { bold: true };
     students.views = [{ state: "frozen", ySplit: 1 }];
 
+    const teachers = workbook.addWorksheet("Docentes");
+    teachers.columns = [
+      { header: "nombre", key: "nombre", width: 32 },
+      { header: "email", key: "email", width: 36 },
+      { header: "password", key: "password", width: 24 },
+    ];
+    teachers.getRow(1).font = { bold: true };
+    teachers.views = [{ state: "frozen", ySplit: 1 }];
+
     const groups = workbook.addWorksheet("Grupos");
     groups.columns = [{ header: "grupo", key: "grupo", width: 32 }];
     groups.getRow(1).font = { bold: true };
@@ -30,21 +39,26 @@ export async function GET() {
     const instructions = workbook.addWorksheet("Instrucciones");
     instructions.columns = [{ width: 100 }];
     instructions.addRows([
-      ["Plantilla de importación de estudiantes y grupos — QuizColegio"],
+      ["Plantilla de importación — QuizColegio"],
       [""],
-      ["Hoja Estudiantes:"],
+      ["Hoja Estudiantes (opcional):"],
       ["- nombre: obligatorio."],
       ["- email: obligatorio y único. Si ya existe un estudiante, se reutiliza."],
       ["- grupos: opcional. Varios grupos separados por punto y coma (;)."],
       ["- password: obligatorio, mínimo 8 caracteres. Solo se usa al crear estudiantes nuevos."],
       [""],
-      ["Hoja Grupos:"],
+      ["Hoja Docentes (opcional):"],
+      ["- nombre: obligatorio."],
+      ["- email: obligatorio y único. Si ya existe un docente, se reutiliza."],
+      ["- password: obligatorio, mínimo 8 caracteres. Solo se usa al crear docentes nuevos."],
+      [""],
+      ["Hoja Grupos (opcional):"],
       ["- Permite crear grupos vacíos. Una fila por grupo."],
       ["- Si un grupo no existe, se crea automáticamente al importar estudiantes."],
       [""],
       ["Notas:"],
-      ["- No se puede usar el email de un docente o administrador."],
-      ["- Los estudiantes existentes no cambian su contraseña."],
+      ["- Un email no puede repetirse entre estudiantes y docentes, ni pertenecer a un administrador."],
+      ["- Los estudiantes y docentes existentes no cambian su contraseña."],
       ["- Las filas con errores se reportan y no se importan; el resto sí."],
     ]);
     instructions.getRow(1).font = { bold: true, size: 14 };
@@ -56,7 +70,7 @@ export async function GET() {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": 'attachment; filename="plantilla-estudiantes.xlsx"',
+        "Content-Disposition": 'attachment; filename="plantilla-importacion.xlsx"',
         "Cache-Control": "no-store",
       },
     });

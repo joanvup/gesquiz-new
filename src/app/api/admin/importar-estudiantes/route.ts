@@ -64,16 +64,23 @@ export async function POST(request: Request) {
 
     const errors: ImportIssue[] = [...parsed.errors];
     const report = {
-      totalRows: parsed.students.length,
+      totalRows: parsed.students.length + parsed.teachers.length,
       studentsCreated: 0,
       studentsExisting: 0,
       studentsUpdated: 0,
+      teachersCreated: 0,
+      teachersExisting: 0,
+      teachersUpdated: 0,
       groupsCreated: 0,
       membershipsAdded: 0,
       errors,
     };
 
-    if (parsed.students.length === 0 && parsed.groups.length === 0) {
+    if (
+      parsed.students.length === 0 &&
+      parsed.teachers.length === 0 &&
+      parsed.groups.length === 0
+    ) {
       return NextResponse.json(
         {
           error: "No se encontraron filas válidas para importar",
@@ -105,6 +112,7 @@ export async function POST(request: Request) {
           if (student) {
             if (student.role !== "STUDENT") {
               errors.push({
+                sheet: "Estudiantes",
                 row: row.rowNumber,
                 message: `El email ${row.email} pertenece a un usuario que no es estudiante`,
               });
@@ -136,6 +144,7 @@ export async function POST(request: Request) {
             const groupId = groupCache.get(normalize(groupName));
             if (!groupId) {
               errors.push({
+                sheet: "Estudiantes",
                 row: row.rowNumber,
                 message: `No se pudo crear o encontrar el grupo "${groupName}"`,
               });
@@ -154,6 +163,43 @@ export async function POST(request: Request) {
               });
               report.membershipsAdded++;
             }
+          }
+        }
+
+        for (const row of parsed.teachers) {
+          const existingTeacher = await tx.user.findUnique({
+            where: { email: row.email },
+          });
+
+          if (existingTeacher) {
+            if (existingTeacher.role !== "TEACHER") {
+              errors.push({
+                sheet: "Docentes",
+                row: row.rowNumber,
+                message: `El email ${row.email} pertenece a un usuario que no es docente`,
+              });
+              continue;
+            }
+
+            report.teachersExisting++;
+            if (existingTeacher.name !== row.nombre) {
+              await tx.user.update({
+                where: { id: existingTeacher.id },
+                data: { name: row.nombre },
+              });
+              report.teachersUpdated++;
+            }
+          } else {
+            const passwordHash = await bcrypt.hash(row.password, 10);
+            await tx.user.create({
+              data: {
+                name: row.nombre,
+                email: row.email,
+                passwordHash,
+                role: "TEACHER",
+              },
+            });
+            report.teachersCreated++;
           }
         }
 

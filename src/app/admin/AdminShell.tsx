@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Upload,
+  UserRoundCheck,
   UsersRound,
 } from "lucide-react";
 import { Mascot, ThemeToggle } from "@/components";
@@ -17,6 +18,7 @@ import { adminLogoutAction } from "./actions";
 const links = [
   { href: "/admin", label: "Resumen", icon: LayoutDashboard, exact: true },
   { href: "/admin/estudiantes", label: "Estudiantes", icon: GraduationCap },
+  { href: "/admin/docentes", label: "Docentes", icon: UserRoundCheck },
   { href: "/admin/grupos", label: "Grupos", icon: UsersRound },
   { href: "/admin/importar", label: "Importar Excel", icon: Upload },
 ];

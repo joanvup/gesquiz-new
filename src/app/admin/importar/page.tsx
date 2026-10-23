@@ -14,6 +14,7 @@ import { Button, Mascot } from "@/components";
 interface ImportIssue {
   row: number;
   message: string;
+  sheet?: string;
 }
 
 interface Report {
@@ -21,6 +22,9 @@ interface Report {
   studentsCreated: number;
   studentsExisting: number;
   studentsUpdated: number;
+  teachersCreated: number;
+  teachersExisting: number;
+  teachersUpdated: number;
   groupsCreated: number;
   membershipsAdded: number;
   errors: ImportIssue[];
@@ -112,7 +116,7 @@ export default function AdminImportarPage() {
         <div>
           <h2 className="text-2xl font-heading font-bold text-text flex items-center gap-2">
             <FileSpreadsheet className="w-6 h-6 text-success-text" />
-            Importar estudiantes y grupos
+            Importar estudiantes, docentes y grupos
           </h2>
           <p className="text-sm text-text-muted mt-1">
             Carga masiva desde un archivo Excel (.xlsx).
@@ -133,14 +137,19 @@ export default function AdminImportarPage() {
           <Mascot expression="think" size="md" />
           <div className="text-sm text-text-muted space-y-2">
             <p>
-              La hoja <strong className="text-text">Estudiantes</strong> debe tener las
-              columnas <code>nombre</code>, <code>email</code>, <code>grupos</code> y{" "}
-              <code>password</code>.
+              La hoja <strong className="text-text">Estudiantes</strong> es opcional y,
+              si existe, debe tener las columnas <code>nombre</code>, <code>email</code> y{" "}
+              <code>password</code>. La columna <code>grupos</code> es opcional.
             </p>
             <p>
               La contraseña es obligatoria (mínimo 8 caracteres) y solo se aplica a
               estudiantes nuevos. Para varios grupos, sepáralos con punto y coma:{" "}
               <code>8A;Matemática</code>.
+            </p>
+            <p>
+              La hoja <strong className="text-text">Docentes</strong> es opcional y debe
+              tener las columnas <code>nombre</code>, <code>email</code> y{" "}
+              <code>password</code>. Si el docente ya existe, solo se actualiza su nombre.
             </p>
             <p>
               La hoja <strong className="text-text">Grupos</strong> es opcional y permite
@@ -221,10 +230,13 @@ export default function AdminImportarPage() {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6">
             {[
-              { label: "Filas válidas", value: report.totalRows },
+              { label: "Personas válidas", value: report.totalRows },
               { label: "Estudiantes creados", value: report.studentsCreated },
               { label: "Estudiantes existentes", value: report.studentsExisting },
-              { label: "Nombres actualizados", value: report.studentsUpdated },
+              { label: "Nombres de estudiantes actualizados", value: report.studentsUpdated },
+              { label: "Docentes creados", value: report.teachersCreated },
+              { label: "Docentes existentes", value: report.teachersExisting },
+              { label: "Nombres de docentes actualizados", value: report.teachersUpdated },
               { label: "Grupos creados", value: report.groupsCreated },
               { label: "Membresías añadidas", value: report.membershipsAdded },
             ].map((item) => (
@@ -244,13 +256,17 @@ export default function AdminImportarPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-surface-alt/60 text-text-muted">
                     <tr>
+                      <th className="text-left px-4 py-2 font-medium w-32">Hoja</th>
                       <th className="text-left px-4 py-2 font-medium w-24">Fila</th>
                       <th className="text-left px-4 py-2 font-medium">Detalle</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {report.errors.map((issue, index) => (
-                      <tr key={`${issue.row}-${index}`}>
+                      <tr key={`${issue.sheet}-${issue.row}-${index}`}>
+                        <td className="px-4 py-2 text-text-muted">
+                          {issue.sheet || "—"}
+                        </td>
                         <td className="px-4 py-2 text-text-muted">{issue.row}</td>
                         <td className="px-4 py-2 text-text">{issue.message}</td>
                       </tr>
@@ -267,6 +283,12 @@ export default function AdminImportarPage() {
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition"
             >
               Ver estudiantes
+            </Link>
+            <Link
+              href="/admin/docentes"
+              className="px-4 py-2 rounded-xl border border-border text-text text-sm font-medium hover:bg-surface-alt transition"
+            >
+              Ver docentes
             </Link>
             <Link
               href="/admin/grupos"

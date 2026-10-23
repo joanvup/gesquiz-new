@@ -57,8 +57,8 @@ export default function AdminHomePage() {
             Bienvenido al panel de administración
           </h2>
           <p className="text-text-muted mt-2">
-            Desde aquí puedes importar estudiantes y grupos desde Excel, gestionarlos
-            manualmente y restablecer contraseñas.
+            Desde aquí puedes importar estudiantes, docentes y grupos desde Excel,
+            gestionarlos manualmente y restablecer contraseñas.
           </p>
         </div>
         <Link
@@ -100,7 +100,7 @@ export default function AdminHomePage() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/admin/estudiantes"
           className="bg-card border border-border rounded-3xl p-6 hover:shadow-lg hover:-translate-y-1 transition"
@@ -109,6 +109,20 @@ export default function AdminHomePage() {
           <h3 className="font-heading font-bold text-text mt-3">Gestionar estudiantes</h3>
           <p className="text-sm text-text-muted mt-1">
             Crear, editar, eliminar y asignar grupos.
+          </p>
+          <span className="inline-flex items-center gap-1 text-primary-text text-sm font-medium mt-4">
+            Abrir <ArrowRight className="w-4 h-4" />
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/docentes"
+          className="bg-card border border-border rounded-3xl p-6 hover:shadow-lg hover:-translate-y-1 transition"
+        >
+          <UserRoundCheck className="w-6 h-6 text-success-text" />
+          <h3 className="font-heading font-bold text-text mt-3">Gestionar docentes</h3>
+          <p className="text-sm text-text-muted mt-1">
+            Crear, editar, eliminar y restablecer contraseñas.
           </p>
           <span className="inline-flex items-center gap-1 text-primary-text text-sm font-medium mt-4">
             Abrir <ArrowRight className="w-4 h-4" />
@@ -136,7 +150,7 @@ export default function AdminHomePage() {
           <Upload className="w-6 h-6 text-success-text" />
           <h3 className="font-heading font-bold text-text mt-3">Importar desde Excel</h3>
           <p className="text-sm text-text-muted mt-1">
-            Carga masiva de estudiantes y grupos con reporte de errores.
+            Carga masiva de estudiantes, docentes y grupos con reporte de errores.
           </p>
           <span className="inline-flex items-center gap-1 text-primary-text text-sm font-medium mt-4">
             Abrir <ArrowRight className="w-4 h-4" />

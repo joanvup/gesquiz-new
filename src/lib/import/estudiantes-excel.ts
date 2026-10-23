@@ -16,13 +16,22 @@ export interface ParsedStudentRow {
   grupos: string[];
 }
 
+export interface ParsedTeacherRow {
+  rowNumber: number;
+  nombre: string;
+  email: string;
+  password: string;
+}
+
 export interface ImportIssue {
   row: number;
   message: string;
+  sheet?: string;
 }
 
 export interface ParsedStudentsWorkbook {
   students: ParsedStudentRow[];
+  teachers: ParsedTeacherRow[];
   groups: string[];
   errors: ImportIssue[];
 }
@@ -139,72 +148,166 @@ export async function parseStudentsWorkbook(
   await workbook.xlsx.load(data);
 
   const studentsSheet = findSheet(workbook, "Estudiantes");
-  if (!studentsSheet) {
-    throw new ExcelFormatError('El archivo debe contener una hoja llamada "Estudiantes"');
-  }
+  const teachersSheet = findSheet(workbook, "Docentes");
+  const groupsSheet = findSheet(workbook, "Grupos");
 
-  const headers = findHeaders(studentsSheet, ["nombre", "email", "password"]);
-  const nombreColumn = headers.columns.get("nombre")!;
-  const emailColumn = headers.columns.get("email")!;
-  const passwordColumn = headers.columns.get("password")!;
-  const gruposColumn = headers.columns.get("grupos");
+  if (!studentsSheet && !teachersSheet && !groupsSheet) {
+    throw new ExcelFormatError(
+      'El archivo debe contener al menos una hoja llamada "Estudiantes", "Docentes" o "Grupos"'
+    );
+  }
 
   const students: ParsedStudentRow[] = [];
+  const teachers: ParsedTeacherRow[] = [];
   const errors: ImportIssue[] = [];
-  const seenEmails = new Set<string>();
+  const emailSheet = new Map<string, string>();
   const groupSet = new Map<string, string>();
 
-  for (let rowNumber = headers.rowNumber + 1; rowNumber <= studentsSheet.rowCount; rowNumber++) {
-    const row = studentsSheet.getRow(rowNumber);
+  if (studentsSheet) {
+    let headers: HeaderInfo | null = null;
 
-    const nombre = cellText(row.getCell(nombreColumn));
-    const email = cellText(row.getCell(emailColumn));
-    const password = cellText(row.getCell(passwordColumn));
-    const gruposRaw = gruposColumn ? cellText(row.getCell(gruposColumn)) : "";
-
-    if (!nombre && !email && !password && !gruposRaw) continue;
-
-    const result = rowSchema.safeParse({ nombre, email, password });
-    if (!result.success) {
-      const message = result.error.issues.map((issue) => issue.message).join(". ");
-      errors.push({ row: rowNumber, message });
-      continue;
-    }
-
-    const grupos = parseGroups(gruposRaw);
-    const tooLongGroup = grupos.find((group) => group.length > 100);
-    if (tooLongGroup) {
+    try {
+      headers = findHeaders(studentsSheet, ["nombre", "email", "password"]);
+    } catch (err) {
       errors.push({
-        row: rowNumber,
-        message: `El grupo "${tooLongGroup}" supera los 100 caracteres`,
+        sheet: "Estudiantes",
+        row: 1,
+        message: `La hoja "Estudiantes" no es válida: ${
+          err instanceof Error ? err.message : "faltan columnas obligatorias"
+        }`,
       });
-      continue;
     }
 
-    if (seenEmails.has(result.data.email)) {
-      errors.push({
-        row: rowNumber,
-        message: `El email ${result.data.email} está repetido en el archivo`,
-      });
-      continue;
-    }
+    if (headers) {
+      const nombreColumn = headers.columns.get("nombre")!;
+      const emailColumn = headers.columns.get("email")!;
+      const passwordColumn = headers.columns.get("password")!;
+      const gruposColumn = headers.columns.get("grupos");
 
-    seenEmails.add(result.data.email);
-    for (const group of grupos) {
-      const key = normalize(group);
-      if (!groupSet.has(key)) groupSet.set(key, group);
-    }
+      for (
+        let rowNumber = headers.rowNumber + 1;
+        rowNumber <= studentsSheet.rowCount;
+        rowNumber++
+      ) {
+        const row = studentsSheet.getRow(rowNumber);
 
-    students.push({
-      rowNumber,
-      nombre: result.data.nombre,
-      email: result.data.email,
-      password: result.data.password,
-      grupos,
-    });
+        const nombre = cellText(row.getCell(nombreColumn));
+        const email = cellText(row.getCell(emailColumn));
+        const password = cellText(row.getCell(passwordColumn));
+        const gruposRaw = gruposColumn ? cellText(row.getCell(gruposColumn)) : "";
+
+        if (!nombre && !email && !password && !gruposRaw) continue;
+
+        const result = rowSchema.safeParse({ nombre, email, password });
+        if (!result.success) {
+          const message = result.error.issues
+            .map((issue) => issue.message)
+            .join(". ");
+          errors.push({ sheet: "Estudiantes", row: rowNumber, message });
+          continue;
+        }
+
+        const grupos = parseGroups(gruposRaw);
+        const tooLongGroup = grupos.find((group) => group.length > 100);
+        if (tooLongGroup) {
+          errors.push({
+            sheet: "Estudiantes",
+            row: rowNumber,
+            message: `El grupo "${tooLongGroup}" supera los 100 caracteres`,
+          });
+          continue;
+        }
+
+        const previousSheet = emailSheet.get(result.data.email);
+        if (previousSheet) {
+          errors.push({
+            sheet: "Estudiantes",
+            row: rowNumber,
+            message: `El email ${result.data.email} está repetido en el archivo (ya aparece en la hoja "${previousSheet}")`,
+          });
+          continue;
+        }
+
+        emailSheet.set(result.data.email, "Estudiantes");
+        for (const group of grupos) {
+          const key = normalize(group);
+          if (!groupSet.has(key)) groupSet.set(key, group);
+        }
+
+        students.push({
+          rowNumber,
+          nombre: result.data.nombre,
+          email: result.data.email,
+          password: result.data.password,
+          grupos,
+        });
+      }
+    }
   }
 
-  const groupsSheet = findSheet(workbook, "Grupos");
+  if (teachersSheet) {
+    let headers: HeaderInfo | null = null;
+
+    try {
+      headers = findHeaders(teachersSheet, ["nombre", "email", "password"]);
+    } catch (err) {
+      errors.push({
+        sheet: "Docentes",
+        row: 1,
+        message: `La hoja "Docentes" no es válida: ${
+          err instanceof Error ? err.message : "faltan columnas obligatorias"
+        }`,
+      });
+    }
+
+    if (headers) {
+      const nombreColumn = headers.columns.get("nombre")!;
+      const emailColumn = headers.columns.get("email")!;
+      const passwordColumn = headers.columns.get("password")!;
+
+      for (
+        let rowNumber = headers.rowNumber + 1;
+        rowNumber <= teachersSheet.rowCount;
+        rowNumber++
+      ) {
+        const row = teachersSheet.getRow(rowNumber);
+
+        const nombre = cellText(row.getCell(nombreColumn));
+        const email = cellText(row.getCell(emailColumn));
+        const password = cellText(row.getCell(passwordColumn));
+
+        if (!nombre && !email && !password) continue;
+
+        const result = rowSchema.safeParse({ nombre, email, password });
+        if (!result.success) {
+          const message = result.error.issues
+            .map((issue) => issue.message)
+            .join(". ");
+          errors.push({ sheet: "Docentes", row: rowNumber, message });
+          continue;
+        }
+
+        const previousSheet = emailSheet.get(result.data.email);
+        if (previousSheet) {
+          errors.push({
+            sheet: "Docentes",
+            row: rowNumber,
+            message: `El email ${result.data.email} está repetido en el archivo (ya aparece en la hoja "${previousSheet}")`,
+          });
+          continue;
+        }
+
+        emailSheet.set(result.data.email, "Docentes");
+        teachers.push({
+          rowNumber,
+          nombre: result.data.nombre,
+          email: result.data.email,
+          password: result.data.password,
+        });
+      }
+    }
+  }
+
   if (groupsSheet) {
     try {
       const groupHeaders = findHeaders(groupsSheet, ["grupo"]);
@@ -220,6 +323,7 @@ export async function parseStudentsWorkbook(
 
         if (name.length > 100) {
           errors.push({
+            sheet: "Grupos",
             row: rowNumber,
             message: `El grupo "${name}" supera los 100 caracteres`,
           });
@@ -233,6 +337,7 @@ export async function parseStudentsWorkbook(
       // La hoja Grupos es opcional; si existe pero no tiene el formato
       // esperado, se ignoran sus filas y se reporta el problema.
       errors.push({
+        sheet: "Grupos",
         row: 1,
         message: 'La hoja "Grupos" no tiene la columna "grupo" y fue ignorada',
       });
@@ -241,6 +346,7 @@ export async function parseStudentsWorkbook(
 
   return {
     students,
+    teachers,
     groups: Array.from(groupSet.values()),
     errors,
   };
