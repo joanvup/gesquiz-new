@@ -12,6 +12,10 @@ interface QuizItem {
   descripcion?: string;
   publicado: boolean;
   puntajeMaximo: number;
+  ventanaAbre: string | null;
+  ventanaCierra: string | null;
+  tiempoLimiteMinutos: number | null;
+  intentosPermitidos: number;
   _count: {
     questions: number;
     assignments: number;
@@ -193,6 +197,18 @@ export default function DocenteDashboard() {
                   <span>📊 Intentos:</span>
                   <span className='font-semibold text-text'>{q._count.attempts}</span>
                 </div>
+                {q.ventanaAbre && q.ventanaCierra && (
+                  <>
+                    <div className='flex justify-between text-xs text-text-muted'>
+                      <span>Abierto:</span>
+                      <span>{new Date(q.ventanaAbre).toLocaleDateString('es-ES')}</span>
+                    </div>
+                    <div className='flex justify-between text-xs text-text-muted'>
+                      <span>Cierra:</span>
+                      <span>{new Date(q.ventanaCierra).toLocaleDateString('es-ES')}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className='border-t border-border pt-4 grid grid-cols-2 gap-2 text-xs font-medium'>

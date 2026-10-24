@@ -104,9 +104,17 @@ async function EstudianteContent() {
             const attemptsCount = validAttempts.length;
             const canAttempt = attemptsCount < quiz.intentosPermitidos;
 
-            let windowOpen = true;
-            if (quiz.ventanaAbre && now < new Date(quiz.ventanaAbre)) windowOpen = false;
-            if (quiz.ventanaCierra && now > new Date(quiz.ventanaCierra)) windowOpen = false;
+            // Fechas de ventana
+            const windowOpen = !(
+              (quiz.ventanaAbre && now < new Date(quiz.ventanaAbre)) ||
+              (quiz.ventanaCierra && now > new Date(quiz.ventanaCierra))
+            );
+            const fechaAbre = quiz.ventanaAbre
+              ? new Date(quiz.ventanaAbre).toLocaleDateString('es-ES')
+              : null;
+            const fechaCierra = quiz.ventanaCierra
+              ? new Date(quiz.ventanaCierra).toLocaleDateString('es-ES')
+              : null;
 
             const latestAttempt = quiz.attempts[0];
             const latestGrade =
@@ -127,6 +135,12 @@ async function EstudianteContent() {
                 <p className="text-text-muted text-sm mb-4 line-clamp-2">
                   {quiz.descripcion || 'Sin descripción'}
                 </p>
+                {fechaAbre || fechaCierra && (
+                  <div className="text-xs text-text-muted mb-3 flex items-center gap-2">
+                    {fechaAbre && <span>📅 Abre: {fechaAbre}</span>}
+                    {fechaCierra && <span>Cierra: {fechaCierra}</span>}
+                  </div>
+                )}
 
                 {/* Stats */}
                 <div className="space-y-2 text-sm text-text-muted mb-4">

@@ -31,7 +31,16 @@ export async function GET() {
     const where = user.role === 'ADMIN' ? {} : { teacherId: user.id };
     const quizzes = await db.quiz.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        titulo: true,
+        descripcion: true,
+        publicado: true,
+        puntajeMaximo: true,
+        ventanaAbre: true,
+        ventanaCierra: true,
+        tiempoLimiteMinutos: true,
+        intentosPermitidos: true,
         _count: {
           select: { questions: true, assignments: true, attempts: true },
         },
