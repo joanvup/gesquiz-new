@@ -137,9 +137,19 @@ async function EstudianteContent() {
                   {quiz.descripcion || 'Sin descripción'}
                 </p>
                 {fechaAbre || fechaCierra && (
-                  <div className="text-xs text-text-muted mb-3 flex items-center gap-2">
-                    {fechaAbre && <span>📅 Abre: {fechaAbre}</span>}
-                    {fechaCierra && <span>Cierra: {fechaCierra}</span>}
+                  <div className="text-xs text-text-muted mb-3">
+                    {fechaAbre && (
+                      <div className="flex justify-between">
+                        <span>Abierto:</span>
+                        <span>{fechaAbre}</span>
+                      </div>
+                    )}
+                    {fechaCierra && (
+                      <div className="flex justify-between">
+                        <span>Cierra:</span>
+                        <span>{fechaCierra}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
