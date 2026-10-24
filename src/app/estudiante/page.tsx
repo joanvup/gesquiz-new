@@ -8,6 +8,7 @@ import { StartQuizButton, ResumeQuizButton } from "./StartQuizButton";
 import { Mascot, Badge, ProgressBar, EmptyState, Button, ThemeToggle } from "@/components";
 import { BookOpen, Trophy, Timer, CheckCircle2 } from "lucide-react";
 import { toGradeScale } from "@/lib/grades";
+import { formatDateTimeCO } from "@/lib/format-colombia";
 
 async function EstudianteContent() {
   const user = await getSessionUser();
@@ -110,10 +111,10 @@ async function EstudianteContent() {
               (quiz.ventanaCierra && now > new Date(quiz.ventanaCierra))
             );
             const fechaAbre = quiz.ventanaAbre
-              ? new Date(quiz.ventanaAbre).toLocaleDateString('es-ES')
+              ? formatDateTimeCO(quiz.ventanaAbre)
               : null;
             const fechaCierra = quiz.ventanaCierra
-              ? new Date(quiz.ventanaCierra).toLocaleDateString('es-ES')
+              ? formatDateTimeCO(quiz.ventanaCierra)
               : null;
 
             const latestAttempt = quiz.attempts[0];

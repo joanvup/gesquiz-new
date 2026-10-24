@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mascot, Badge, Button, EmptyState, ThemeToggle } from '@/components';
 import { Plus, Edit3, Upload, Share2, Eye, BarChart3, Trash2, LogOut, FileJson } from 'lucide-react';
+import { formatDateTimeCO } from '@/lib/format-colombia';
 
 interface QuizItem {
   id: string;
@@ -201,11 +202,11 @@ export default function DocenteDashboard() {
                   <>
                     <div className='flex justify-between text-xs text-text-muted'>
                       <span>Abierto:</span>
-                      <span>{new Date(q.ventanaAbre).toLocaleDateString('es-ES')}</span>
+                      <span>{formatDateTimeCO(q.ventanaAbre)}</span>
                     </div>
                     <div className='flex justify-between text-xs text-text-muted'>
                       <span>Cierra:</span>
-                      <span>{new Date(q.ventanaCierra).toLocaleDateString('es-ES')}</span>
+                      <span>{formatDateTimeCO(q.ventanaCierra)}</span>
                     </div>
                   </>
                 )}
