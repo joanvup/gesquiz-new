@@ -1,21 +1,8 @@
 ﻿import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { isSameOriginRequest } from "@/lib/csrf";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // CSRF: toda petición mutante debe provenir del mismo origen.
-  const method = request.method.toUpperCase();
-  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-    if (!isSameOriginRequest(request)) {
-      return NextResponse.json(
-        { error: "Origen no permitido" },
-        { status: 403 }
-      );
-    }
-  }
-
   const sessionCookie = request.cookies.get("session")?.value;
 
   // Proteger rutas de admin, docente y estudiante
@@ -36,11 +23,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/docente/:path*",
-    "/estudiante/:path*",
-    "/login",
-    "/api/:path*",
-  ],
+  matcher: ["/admin/:path*", "/docente/:path*", "/estudiante/:path*", "/login"],
 };

@@ -1,4 +1,3 @@
-import { serverError } from "@/lib/api-error";
 ﻿import { NextResponse } from "next/server";
 import { destroySession } from "@/lib/auth";
 import { verifyCsrf } from "@/lib/csrf";
@@ -13,6 +12,7 @@ export async function POST(request: Request) {
     await destroySession();
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    return serverError(err);
+    const message = err instanceof Error ? err.message : "Error interno";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

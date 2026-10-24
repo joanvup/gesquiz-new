@@ -44,9 +44,3 @@ next-env.d.ts
 
 # Imagenes subidas por los docentes (almacenamiento local)
 /storage/
-
-# Bases de datos locales (nunca versionar datos)
-*.db
-*.db-journal
-*.sqlite
-*.sqlite3

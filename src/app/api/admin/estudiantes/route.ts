@@ -1,4 +1,3 @@
-import { serverError } from "@/lib/api-error";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
@@ -52,7 +51,8 @@ export async function GET() {
 
     return NextResponse.json({ students: students.map(serializeStudent) });
   } catch (err) {
-    return serverError(err);
+    const message = err instanceof Error ? err.message : "Error interno";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -116,6 +116,7 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
-    return serverError(err);
+    const message = err instanceof Error ? err.message : "Error interno";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

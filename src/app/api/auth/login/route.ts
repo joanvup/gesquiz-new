@@ -1,9 +1,8 @@
-import { serverError } from "@/lib/api-error";
 ﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession } from "@/lib/auth";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 
 const loginSchema = z.object({
@@ -13,7 +12,7 @@ const loginSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const ip = getClientIp(request);
+    const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
     const body = await request.json();
     const result = loginSchema.safeParse(body);
 
@@ -59,6 +58,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (err: unknown) {
-    return serverError(err);
+    const message = err instanceof Error ? err.message : "Error interno";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

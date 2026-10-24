@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { serverError } from "@/lib/api-error";
 import {
   importQuizTransfer,
   MAX_TRANSFER_BYTES,
@@ -51,6 +50,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, report });
   } catch (err) {
-    return serverError(err);
+    const message = err instanceof Error ? err.message : "Error interno";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

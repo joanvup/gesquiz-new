@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getTeacherQuiz } from "@/lib/quiz-access";
-import { serverError } from "@/lib/api-error";
 import {
   importQuizTransfer,
   MAX_TRANSFER_BYTES,
@@ -62,6 +61,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, report });
   } catch (err) {
-    return serverError(err);
+    const message = err instanceof Error ? err.message : "Error interno";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

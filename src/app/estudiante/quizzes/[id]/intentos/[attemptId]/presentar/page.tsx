@@ -812,7 +812,6 @@ function PresentarQuizContent({
     try {
       const res = await fetch(`/api/estudiante/intentos/${attemptId}/enviar`, {
         method: "POST",
-        headers: { "x-attempt-session": sessionTokenRef.current || "" },
       });
       const data = await res.json();
       if (data.success) {

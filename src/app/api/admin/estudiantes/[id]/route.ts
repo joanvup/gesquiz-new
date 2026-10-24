@@ -1,4 +1,3 @@
-import { serverError } from "@/lib/api-error";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAdminUser } from "@/lib/admin";
@@ -112,7 +111,8 @@ export async function PATCH(
         { status: 409 }
       );
     }
-    return serverError(err);
+    const message = err instanceof Error ? err.message : "Error interno";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -133,6 +133,7 @@ export async function DELETE(
     await db.user.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (err) {
-    return serverError(err);
+    const message = err instanceof Error ? err.message : "Error interno";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
