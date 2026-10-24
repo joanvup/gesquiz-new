@@ -1,3 +1,4 @@
+import { serverError } from "@/lib/api-error";
 ﻿import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
@@ -33,7 +34,12 @@ export async function GET(
       return NextResponse.json({ error: 'Intento no encontrado' }, { status: 404 });
     }
 
-    if (attempt.studentId !== user.id && user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+    const isOwner = attempt.studentId === user.id;
+    const isAdmin = user.role === 'ADMIN';
+    // Un docente solo puede ver intentos de SUS quizzes (no de otros docentes).
+    const isTeacherOwner = user.role === 'TEACHER' && attempt.quiz.teacherId === user.id;
+
+    if (!isOwner && !isAdmin && !isTeacherOwner) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
@@ -85,7 +91,6 @@ export async function GET(
 
     return NextResponse.json({ success: true, attempt });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Error interno';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError(err);
   }
 }

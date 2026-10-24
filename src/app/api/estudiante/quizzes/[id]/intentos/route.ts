@@ -1,7 +1,9 @@
+import { serverError } from "@/lib/api-error";
 ﻿import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { shuffleArray } from '@/lib/quiz-random';
+import { getClientIp } from '@/lib/rate-limit';
 import crypto from 'crypto';
 
 export async function POST(
@@ -52,7 +54,7 @@ export async function POST(
     });
 
     const activeAttempt = existingAttempts.find(a => a.status === 'EN_CURSO');
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+    const ip = getClientIp(request);
     const userAgent = request.headers.get('user-agent') || '';
 
     if (activeAttempt) {
@@ -129,7 +131,6 @@ export async function POST(
 
     return NextResponse.json({ success: true, attempt: newAttempt, sessionToken, resumed: false });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Error interno';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError(err);
   }
 }

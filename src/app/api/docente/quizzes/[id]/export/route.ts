@@ -1,3 +1,4 @@
+import { serverError } from "@/lib/api-error";
 import { NextResponse } from "next/server";
 import { getTeacherQuiz } from "@/lib/quiz-access";
 import { buildQuizExport } from "@/lib/quiz-transfer";
@@ -39,7 +40,6 @@ export async function GET(
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Error interno";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError(err);
   }
 }

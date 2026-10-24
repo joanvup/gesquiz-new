@@ -1,3 +1,4 @@
+import { serverError } from "@/lib/api-error";
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
@@ -32,7 +33,6 @@ export async function GET() {
 
     return NextResponse.json({ groups, students });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Error interno';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError(err);
   }
 }

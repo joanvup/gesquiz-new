@@ -1,29 +1,36 @@
-﻿import { cookies } from "next/headers";
-import crypto from "crypto";
+﻿/**
+ * Protección CSRF para rutas mutantes.
+ *
+ * Se valida el `Origin` de la petición contra el `Host` de destino. Los
+ * navegadores envían `Origin` en POST/PUT/PATCH/DELETE, incluidos los fetch
+ * same-origin, por lo que un sitio externo no puede falsificar la cabecera.
+ *
+ * Si no hay `Origin` (curl, tests, server-to-server) se usa `Sec-Fetch-Site`
+ * como respaldo. Un cliente sin cookie de sesión no puede explotar CSRF, así
+ * que permitir peticiones sin `Origin` no abre un vector real.
+ */
+export function isSameOriginRequest(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
 
-export async function getOrCreateCsrfToken(): Promise<string> {
-  const cookieStore = await cookies();
-  let csrf = cookieStore.get("csrf")?.value;
-  if (!csrf) {
-    csrf = crypto.randomBytes(24).toString("hex");
-    cookieStore.set({
-      name: "csrf",
-      value: csrf,
-      httpOnly: false, // accesible por JS para poner en el header
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-    });
+  if (!origin) {
+    const site = request.headers.get("sec-fetch-site");
+    if (site && site !== "same-origin" && site !== "none") {
+      return false;
+    }
+    return true;
   }
-  return csrf;
-}
 
-export async function verifyCsrf(request: Request): Promise<boolean> {
-  const cookieStore = await cookies();
-  const csrfCookie = cookieStore.get("csrf")?.value;
-  const csrfHeader = request.headers.get("x-csrf-token");
-  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+  try {
+    const originUrl = new URL(origin);
+    return Boolean(host) && originUrl.host === host;
+  } catch {
     return false;
   }
-  return true;
+}
+
+/** Alias mantenido para las rutas que ya lo importaban. */
+export async function verifyCsrf(request: Request): Promise<boolean> {
+  return isSameOriginRequest(request);
 }

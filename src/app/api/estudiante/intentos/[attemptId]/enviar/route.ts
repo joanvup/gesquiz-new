@@ -1,7 +1,8 @@
-﻿import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { getSessionUser } from '@/lib/auth';
-import { gradeQuestion } from '@/lib/scoring';
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { getSessionUser } from "@/lib/auth";
+import { requireAttemptSession } from "@/lib/attempt-session";
+import { gradeQuestion } from "@/lib/scoring";
 
 export async function POST(
   request: Request,
@@ -10,7 +11,7 @@ export async function POST(
   try {
     const user = await getSessionUser();
     if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     const { attemptId } = await params;
@@ -29,16 +30,20 @@ export async function POST(
     });
 
     if (!attempt) {
-      return NextResponse.json({ error: 'Intento no encontrado' }, { status: 404 });
+      return NextResponse.json({ error: "Intento no encontrado" }, { status: 404 });
     }
 
     if (attempt.studentId !== user.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    if (attempt.status !== 'EN_CURSO' && attempt.status !== 'EXPIRADO') {
-      return NextResponse.json({ error: 'El intento ya fue enviado o finalizado' }, { status: 400 });
+    if (attempt.status !== "EN_CURSO" && attempt.status !== "EXPIRADO") {
+      return NextResponse.json({ error: "El intento ya fue enviado o finalizado" }, { status: 400 });
     }
+
+    // Sesión única del intento: impide enviar desde otra pestaña/dispositivo.
+    const session = await requireAttemptSession(request, attempt);
+    if (!session.ok) return session.response;
 
     const quiz = attempt.quiz;
     const questionsForScoring = quiz.questions.map(q => ({
@@ -87,7 +92,7 @@ export async function POST(
       });
     }
 
-    const newStatus = hasManual ? 'ENVIADO' : 'CALIFICADO';
+    const newStatus = hasManual ? "ENVIADO" : "CALIFICADO";
     const updatedAttempt = await db.attempt.update({
       where: { id: attemptId },
       data: {
@@ -113,10 +118,10 @@ export async function POST(
       mostrarResultado: quiz.mostrarResultado,
     };
 
-    if (quiz.mostrarResultado === 'NOTA') {
+    if (quiz.mostrarResultado === "NOTA") {
       responseData.score = updatedAttempt.score;
       responseData.puntajeMaximo = quiz.puntajeMaximo;
-    } else if (quiz.mostrarResultado === 'NOTA_Y_RESPUESTAS') {
+    } else if (quiz.mostrarResultado === "NOTA_Y_RESPUESTAS") {
       responseData.score = updatedAttempt.score;
       responseData.puntajeMaximo = quiz.puntajeMaximo;
       responseData.answers = updatedAttempt.answers;
@@ -135,8 +140,10 @@ export async function POST(
     }
 
     return NextResponse.json(responseData);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Error interno';
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    );
   }
 }

@@ -38,10 +38,41 @@ describe('Moodle XML Parser', () => {
     expect(result.report.preguntasImportadas).toBe(1);
     const q = result.questions[0];
     expect(q.enunciadoHtml).not.toContain('@@PLUGINFILE@@');
-    expect(q.enunciadoHtml).toContain('/uploads/moodle/grafico.png');
+    expect(q.enunciadoHtml).toContain('/api/uploads/moodle/grafico.png');
 
-    const imagePath = path.resolve('public/uploads/moodle/grafico.png');
+    const imagePath = path.resolve('storage/uploads/moodle/grafico.png');
     expect(fs.existsSync(imagePath)).toBe(true);
+  });
+
+  it('rejects embedded files that try to escape the upload directory', () => {
+    const base64 = Buffer.from('fake-png').toString('base64');
+    const xml = `<quiz>
+      <question type="description">
+        <name><text>Traversal</text></name>
+        <questiontext><text>Hola</text>
+          <file name="../../../../evil.png" encoding="base64">${base64}</file>
+        </questiontext>
+      </question>
+    </quiz>`;
+
+    const result = parseMoodleXml(xml);
+    expect(result.questions[0].enunciadoHtml).not.toContain('@@PLUGINFILE@@');
+    expect(result.questions[0].enunciadoHtml).not.toContain('evil');
+  });
+
+  it('rejects embedded non-image files', () => {
+    const base64 = Buffer.from('<script>alert(1)</script>').toString('base64');
+    const xml = `<quiz>
+      <question type="description">
+        <name><text>XSS file</text></name>
+        <questiontext><text>Hola</text>
+          <file name="payload.html" encoding="base64">${base64}</file>
+        </questiontext>
+      </question>
+    </quiz>`;
+
+    const result = parseMoodleXml(xml);
+    expect(result.questions[0].enunciadoHtml).not.toContain('payload.html');
   });
 
   it('handles invalido-malicioso.xml safely without XXE crash and sanitizes xss scripts', () => {

@@ -1,3 +1,4 @@
+import { serverError } from "@/lib/api-error";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -63,7 +64,6 @@ export async function POST(
 
     return NextResponse.json({ success: true, orden: finalOrder });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Error interno";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError(err);
   }
 }

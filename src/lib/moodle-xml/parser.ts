@@ -45,6 +45,18 @@ export interface ParseResult {
 
 export const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
 
+/** Tamaño máximo por archivo embebido (base64 decodificado). */
+const MAX_EMBEDDED_FILE_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Solo se aceptan imágenes con estos formatos. Evita que un XML malicioso
+ * escriba HTML/SVG/JS servible desde el directorio de subidas.
+ */
+const ALLOWED_FILE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp"]);
+
+/** Nombre de archivo seguro: sin separadores, sin `..`, sin caracteres raros. */
+const SAFE_FILE_NAME = /^[A-Za-z0-9][A-Za-z0-9._ -]*$/;
+
 const ALLOWED_TAGS = [
   'p', 'b', 'i', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'img',
   'math', 'sub', 'sup', 'table', 'tr', 'td', 'th', 'span', 'div', 'a'
@@ -60,8 +72,45 @@ function sanitize(html: string | undefined): string {
   return sanitizeHtml(String(html), {
     allowedTags: ALLOWED_TAGS,
     allowedAttributes: ALLOWED_ATTRIBUTES,
-    allowedSchemes: ['http', 'https', 'data']
+    // `data:` se permite solo en imágenes (pegadas/embebidas). Permitirlo en
+    // enlaces abre la puerta a navegación a `data:text/html,...`.
+    allowedSchemes: ['http', 'https'],
+    allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+    allowProtocolRelative: false,
+    transformTags: {
+      a: (tagName, attribs) => {
+        const next = { ...attribs };
+        if (next.target === '_blank') {
+          next.rel = 'noopener noreferrer';
+        }
+        return { tagName, attribs: next };
+      }
+    }
   });
+}
+
+/**
+ * Normaliza y valida el nombre de un archivo embebido en el XML.
+ * Devuelve `null` si el nombre intenta escapar del directorio o usa una
+ * extensión no permitida.
+ */
+function sanitizeEmbeddedFileName(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+
+  // Rechaza rutas y traversal de forma explícita.
+  if (raw.includes('/') || raw.includes('\\') || raw.includes('..')) return null;
+
+  const name = raw.trim();
+
+  if (!name || name === '.' || name === '..') return null;
+  if (name.includes('\0')) return null;
+  if (name.startsWith('.')) return null;
+  if (!SAFE_FILE_NAME.test(name)) return null;
+
+  const extension = path.extname(name).toLowerCase();
+  if (!ALLOWED_FILE_EXTENSIONS.has(extension)) return null;
+
+  return name;
 }
 
 function extractText(node: any): string {
@@ -112,20 +161,30 @@ function extractFiles(questionNode: any, uploadDir: string, publicPath: string):
     fs.mkdirSync(uploadDir, { recursive: true });
   }
 
+  const root = path.resolve(uploadDir);
+
   for (const f of files) {
-    const fileName = f.name || f['@_name'];
+    const fileName = sanitizeEmbeddedFileName(f.name ?? f['@_name']);
     const encoding = f.encoding || f['@_encoding'];
     const content = extractText(f);
-    if (fileName && encoding === 'base64' && content) {
-      try {
-        const buffer = Buffer.from(content.trim(), 'base64');
-        const targetPath = path.join(uploadDir, fileName);
-        fs.writeFileSync(targetPath, buffer);
-        const publicUrl = publicPath + '/' + fileName;
-        fileMap.set(fileName, publicUrl);
-        fileMap.set('@@PLUGINFILE@@/' + fileName, publicUrl);
-      } catch {
-      }
+
+    // Se rechaza cualquier nombre inválido, ruta relativa o extensión no
+    // permitida antes de tocar el disco.
+    if (!fileName || encoding !== 'base64' || !content) continue;
+
+    try {
+      const buffer = Buffer.from(content.trim(), 'base64');
+      if (buffer.length === 0 || buffer.length > MAX_EMBEDDED_FILE_BYTES) continue;
+
+      const targetPath = path.resolve(root, fileName);
+      if (targetPath !== path.join(root, fileName)) continue;
+
+      fs.writeFileSync(targetPath, buffer, { flag: 'w' });
+      const publicUrl = publicPath + '/' + encodeURIComponent(fileName);
+      fileMap.set(fileName, publicUrl);
+      fileMap.set('@@PLUGINFILE@@/' + fileName, publicUrl);
+    } catch {
+      // Archivo corrupto o sin permisos: se ignora sin interrumpir la importación.
     }
   }
 
@@ -144,8 +203,16 @@ function replaceFileReferences(html: string, fileMap: Map<string, string>): stri
 
 export function parseMoodleXml(xmlContent: string | Buffer, options?: { maxBytes?: number; uploadDir?: string; publicUploadPath?: string }): ParseResult {
   const maxBytes = options?.maxBytes || MAX_IMPORT_BYTES;
-  const uploadDir = options?.uploadDir || path.join(process.cwd(), 'public', 'uploads', 'moodle');
-  const publicUploadPath = options?.publicUploadPath || '/uploads/moodle';
+  const uploadRoot = process.env.UPLOAD_DIR?.trim()
+    ? path.resolve(process.env.UPLOAD_DIR)
+    : path.join(process.cwd(), 'storage', 'uploads');
+  const uploadDir =
+    options?.uploadDir ||
+    process.env.MOODLE_UPLOAD_DIR?.trim() ||
+    path.join(uploadRoot, 'moodle');
+  // Se sirve con /api/uploads/[...path] para que funcione tras `next build`
+  // y para no dejar archivos subidos dentro de `public/`.
+  const publicUploadPath = options?.publicUploadPath || '/api/uploads/moodle';
 
   const buffer = Buffer.isBuffer(xmlContent) ? xmlContent : Buffer.from(xmlContent, 'utf8');
   if (buffer.length > maxBytes) {
