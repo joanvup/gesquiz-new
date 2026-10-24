@@ -1,3 +1,9 @@
+## Memoria del proyecto (leer al iniciar sesión)
+
+Antes de trabajar, lee `memoria/contexto.md` (contexto permanente) y la última
+entrada de `memoria/bitacora/` (trabajo reciente). Al terminar una tarea
+significativa, actualiza ambos siguiendo las reglas de `memoria/README.md`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
