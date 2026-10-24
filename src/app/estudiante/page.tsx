@@ -155,8 +155,8 @@ async function EstudianteContent() {
                 <p className="text-text-muted text-sm mb-4 line-clamp-2">
                   {quiz.descripcion || 'Sin descripción'}
                 </p>
-                {fechaAbre || fechaCierra && (
-                  <div className="text-xs text-text-muted mb-3">
+                {(fechaAbre || fechaCierra) && (
+                  <div className="text-xs text-text-muted mb-3 space-y-1">
                     {fechaAbre && (
                       <div className="flex justify-between">
                         <span>Abierto:</span>
