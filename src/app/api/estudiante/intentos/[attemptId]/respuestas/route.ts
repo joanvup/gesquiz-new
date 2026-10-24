@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { requireAttemptSession } from "@/lib/attempt-session";
+import { answerSaveSchema } from "@/lib/answer-schemas";
 
 export async function POST(
   request: Request,
@@ -40,7 +41,15 @@ export async function POST(
     if (!session.ok) return session.response;
 
     const body = await request.json();
-    const { questionId, respuestaJson, respuestaTexto } = body;
+    const parsed = answerSaveSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || "Datos inválidos" },
+        { status: 400 }
+      );
+    }
+
+    const { questionId, respuestaJson, respuestaTexto } = parsed.data;
 
     // La pregunta debe pertenecer al intento (evita response pollution).
     const question = await db.question.findUnique({
@@ -50,11 +59,6 @@ export async function POST(
 
     if (!question || question.quizId !== attempt.quiz.id) {
       return NextResponse.json({ error: "Pregunta no válida para este intento" }, { status: 400 });
-    }
-
-    // Validación básica: al menos uno de los dos.
-    if ((respuestaJson == null || respuestaJson === "") && (respuestaTexto == null || respuestaTexto === "")) {
-      return NextResponse.json({ error: "Respuesta vacía" }, { status: 400 });
     }
 
     const answer = await db.attemptAnswer.upsert({
