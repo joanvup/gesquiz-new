@@ -44,10 +44,29 @@ async function EstudianteContent() {
       id: { in: quizIds },
       publicado: true,
     },
-    include: {
+    select: {
+      id: true,
+      titulo: true,
+      descripcion: true,
+      publicado: true,
+      puntajeMaximo: true,
+      ventanaAbre: true,
+      ventanaCierra: true,
+      tiempoLimiteMinutos: true,
+      intentosPermitidos: true,
       attempts: {
         where: { studentId: user.id },
         orderBy: { numeroAttempt: 'desc' },
+        select: {
+          id: true,
+          status: true,
+          score: true,
+          numeroAttempt: true,
+          infractions: true,
+          startedAt: true,
+          submittedAt: true,
+          expiresAt: true,
+        },
       },
       _count: {
         select: { questions: true },
