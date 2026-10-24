@@ -145,17 +145,19 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="mt-6 pt-6 border-t border-border text-center">
-                <p className="text-xs text-text-soft space-y-1">
-                  <span>Credenciales de prueba:</span>
-                  <br />
-                  <span className="font-medium text-text">📚 Docente:</span>{" "}
-                  docente@quizcolegio.test / Docente123!
-                  <br />
-                  <span className="font-medium text-text">🎓 Estudiante:</span>{" "}
-                  estudiante1@quizcolegio.test / Estudiante123!
-                </p>
-              </div>
+              {process.env.NODE_ENV !== "production" && (
+                <div className="mt-6 pt-6 border-t border-border text-center">
+                  <p className="text-xs text-text-soft space-y-1">
+                    <span>Credenciales de prueba:</span>
+                    <br />
+                    <span className="font-medium text-text">📚 Docente:</span>{" "}
+                    docente@quizcolegio.test / Docente123!
+                    <br />
+                    <span className="font-medium text-text">🎓 Estudiante:</span>{" "}
+                    estudiante1@quizcolegio.test / Estudiante123!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
