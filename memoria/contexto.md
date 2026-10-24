@@ -94,9 +94,14 @@ storage/               # Uploads en runtime (gitignored)
   reparación de respuestas huérfanas.
 - **Docente**: CRUD quizzes; editor de preguntas manuales (Tiptap, imágenes,
   reordenar); import Moodle XML; import/export JSON; asignación; resultados;
-  calificar ensayos; anular/reabrir intentos.
+  calificar ensayos; anular/reabrir intentos; visualización de fechas de ventana.
 - **Estudiante**: inicio de intento, presentación con modo seguro,
-  infracciones y heartbeat, envío y revisión.
+  infracciones y heartbeat, envío y revisación.
+  - **Fechas de ventana**: ahora muestra apertura y cierre con formato
+    Colombia (UTC-5, hh:mm am/pm) en dos líneas separadas.
+- **Login**: credenciales de prueba (`docente@quizcolegio.test` /
+  `estudiante1@quizcolegio.test`) solo visibles en modo desarrollo
+  (`NODE_ENV !== 'production'`).
 
 > Detalle por sesión en `bitacora/`.
 
