@@ -84,8 +84,15 @@ storage/               # Uploads en runtime (gitignored)
 - El bloque `nextjs-agent-rules` de `AGENTS.md` lo **re-escribe `next dev`**; no
   borrarlo (se regenera como cambio sin commitear).
 - `npm test` usa la DB real de `.env`: requiere MySQL arriba y `npm run db:seed`.
+  En Windows el servicio se llama `MySQL84` y está en arranque **manual**; si
+  está detenido, `seed.test.ts` agota su timeout de 5 s.
 - En producción, los archivos subidos no se sirven desde `public/`; `storage/`
   debe ser un volumen persistente con permisos de escritura.
+- **Despliegue**: el servidor construye lo que esté en `origin/main`. Si los
+  commits solo existen en local, `git pull` no trae nada y el build sale con el
+  código viejo. Flujo: `git push` → en el servidor `git pull`, `npm run build`,
+  `npm run db:check` (si hubo cambios de conexión) y `pm2 restart quizcolegio
+  --update-env` (`--update-env` es obligatorio al cambiar `.env`).
 
 ## Estado funcional (resumen)
 
@@ -107,6 +114,7 @@ storage/               # Uploads en runtime (gitignored)
   `acquireTimeout` 30 s, pool configurable por `DB_POOL_LIMIT` y
   `allowPublicKeyRetrieval: true` (MySQL 8 `caching_sha2_password`). TLS con
   `DB_SSL=true`. `npm run db:check` imprime la causa real de un fallo.
+  Verificado en producción el 2026-10-26 (el login volvió a funcionar).
 - **Errores de BD en login**: ya no se filtra `err.message` al navegador; el
   detalle (incluido `err.cause`) va al log de PM2 y el cliente recibe 503/500
   genéricos.
