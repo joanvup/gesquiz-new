@@ -597,3 +597,115 @@ Solo faltan dos definiciones:
 - Probar la restauración de backups al menos una vez al mes.
 - Si en el futuro se ejecuta más de una instancia de la app, revisar el rate limiting en memoria y considerar Redis o limitación en Nginx.
 - Si se cambia la ubicación de los uploads, actualizar el parser y la configuración de respaldos.
+
+---
+
+## 18. Solución de problemas de conexión a MySQL
+
+### Síntoma
+
+Al entrar a `/login` aparece un mensaje como:
+
+```text
+Invalid `prisma.user.findUnique()` invocation: Database error.
+Code: `45028`. Message: `pool failed to retrieve a connection from pool
+(pool connections: active=0 idle=0 limit=10)`
+```
+
+`active=0 idle=0` significa que **no se logró abrir ni una sola conexión**. El
+código `45028` es `ER_GET_CONNECTION_TIMEOUT` del driver `mariadb`, que oculta
+la causa real en `err.cause`; desde la versión actual de la app ese detalle se
+registra en el log del servidor y el navegador solo muestra un mensaje genérico:
+
+```bash
+sudo -u quizcolegio pm2 logs quizcolegio --lines 50 --nostream
+```
+
+### Diagnóstico rápido
+
+```bash
+sudo -u quizcolegio bash -lc 'cd /var/www/quizcolegio/app && npm run db:check'
+```
+
+El script imprime host, usuario y base de datos (nunca la contraseña), prueba la
+conexión con la configuración de la app y con variantes, y muestra el código de
+error real. Además comprueba del lado del servidor:
+
+```bash
+sudo mysql -e "SELECT user, host, plugin FROM mysql.user WHERE user = 'quizcolegio_app';"
+sudo mysql -e "SHOW VARIABLES LIKE 'max_connections'; SHOW STATUS LIKE 'Threads_connected';"
+sudo ss -ltnp | grep 3306
+```
+
+### Causa 1: contraseña con caracteres especiales sin codificar
+
+`DATABASE_URL` es una URL: la contraseña debe ir **percent-encoded**.
+
+| Carácter | Código |
+| --- | --- |
+| `@` | `%40` |
+| `#` | `%23` |
+| `%` | `%25` |
+| `/` | `%2F` |
+| `:` | `%3A` |
+| `?` | `%3F` |
+| `!` | `%21` (opcional) |
+
+Un `#` sin codificar convierte el resto de la URL en fragmento y hace que el
+host y la base de datos se pierdan sin ningún aviso. Lo más sencillo es generar
+una contraseña solo con caracteres seguros:
+
+```bash
+openssl rand -hex 24
+```
+
+y usarla tal cual en `DATABASE_URL`. Si la contraseña ya existe, codifícala:
+
+```bash
+node -e 'console.log(encodeURIComponent(process.argv[1]))' 'Mi#Clave/2026'
+```
+
+### Causa 2: MySQL 8 con `caching_sha2_password`
+
+MySQL 8 usa `caching_sha2_password` por defecto. El driver `mariadb` necesita
+`allowPublicKeyRetrieval` o TLS para completar la autenticación, y falla con
+`ER_CANNOT_RETRIEVE_RSA_KEY` cuando la caché SHA2 está vacía (por ejemplo, tras
+reiniciar MySQL). La app ya envía `allowPublicKeyRetrieval: true`; si el
+servidor exige TLS, activa:
+
+```env
+DB_SSL="true"
+DB_SSL_REJECT_UNAUTHORIZED="true"
+```
+
+### Causa 3: conexiones agotadas o MySQL caído
+
+```bash
+sudo systemctl status mysql
+sudo mysql -e "SHOW PROCESSLIST;"
+```
+
+Si `Threads_connected` está cerca de `max_connections` (otras aplicaciones del
+servidor también consumen conexiones), reduce el pool de la app:
+
+```env
+DB_POOL_LIMIT="5"
+```
+
+### Causa 4: timeouts demasiado cortos
+
+El driver `mariadb` usa `connectTimeout` de 1 segundo por defecto. La app lo
+eleva a 10 segundos; se puede ajustar con:
+
+```env
+DB_CONNECT_TIMEOUT_MS="10000"
+DB_ACQUIRE_TIMEOUT_MS="30000"
+```
+
+### Después de cambiar `.env`
+
+```bash
+sudo -u quizcolegio bash -lc 'cd /var/www/quizcolegio/app && npm run db:check'
+sudo -u quizcolegio pm2 restart quizcolegio --update-env
+sudo -u quizcolegio pm2 logs quizcolegio --lines 50 --nostream
+```

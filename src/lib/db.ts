@@ -5,14 +5,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-const adapter = createPrismaMariaDbAdapter();
-
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter,
+    adapter: createPrismaMariaDbAdapter(),
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
-}
+// Se conserva también en producción: si Next.js vuelve a evaluar este módulo
+// (route handlers, server components) reutiliza el cliente en lugar de abrir
+// un pool nuevo por cada evaluación.
+globalForPrisma.prisma = db;

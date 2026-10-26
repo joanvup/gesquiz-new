@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:admin": "tsx prisma/create-admin.ts",
+    "db:check": "tsx scripts/check-db.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {
