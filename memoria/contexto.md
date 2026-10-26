@@ -102,6 +102,14 @@ storage/               # Uploads en runtime (gitignored)
 - **Login**: credenciales de prueba (`docente@quizcolegio.test` /
   `estudiante1@quizcolegio.test`) solo visibles en modo desarrollo
   (`NODE_ENV !== 'production'`).
+- **Conexión MySQL**: `createPrismaMariaDbAdapter` valida `DATABASE_URL`
+  (password percent-encoded), usa `connectTimeout` 10 s (el driver trae 1 s),
+  `acquireTimeout` 30 s, pool configurable por `DB_POOL_LIMIT` y
+  `allowPublicKeyRetrieval: true` (MySQL 8 `caching_sha2_password`). TLS con
+  `DB_SSL=true`. `npm run db:check` imprime la causa real de un fallo.
+- **Errores de BD en login**: ya no se filtra `err.message` al navegador; el
+  detalle (incluido `err.cause`) va al log de PM2 y el cliente recibe 503/500
+  genéricos.
 
 > Detalle por sesión en `bitacora/`.
 
@@ -118,6 +126,7 @@ storage/               # Uploads en runtime (gitignored)
 | `npm run db:migrate` | Migraciones Prisma |
 | `npm run db:seed` | Datos de prueba |
 | `npm run db:admin` | Crea/actualiza admin desde `.env` |
+| `npm run db:check` | Diagnóstico de conexión MySQL (host, usuario, causa real del fallo) |
 | `npm run db:studio` | Prisma Studio |
 
 ## Docs relacionados
